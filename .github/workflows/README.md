@@ -27,7 +27,9 @@ deploy-production.yml   Promote exact staging artifacts to production (never reb
   validation before opening a PR.
 - **Both staging workflows check each SWA's `Cache-Control` headers after deploying it**
   (`.github/scripts/check-swa-cache-headers.sh`): fixed-name files must be `no-cache` and
-  fingerprinted `_framework/*` files `immutable`, or browsers keep the previous build. A
+  fingerprinted `_framework/*` files `immutable`, or browsers keep the previous build.
+  Manager's `version.json` (its build ID, polled by open tabs to offer a reload, issue #859)
+  must be `no-cache` too; the publish writes it from `-p:SourceRevisionId=${{ github.sha }}`. A
   failure means `staticwebapp.config.json` is wrong. Production promotes the same artifacts,
   so it is not re-checked.
 - **API changes are additive for one release.** Intake and Manager clients built before a

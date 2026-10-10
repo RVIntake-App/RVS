@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -72,6 +73,17 @@ builder.Services.AddScoped<AdminApiClient>(sp =>
 
 // Profile-menu and access-restricted sign-out (issues #498, #625).
 builder.Services.AddScoped<SignOutService>();
+
+// Offers a reload when a newer build is deployed (issue #859). The running build's ID is the git
+// SHA the SDK appends to the informational version; the publish writes the same SHA to
+// version.json (RVS.Blazor.Manager.csproj). Fetched from this app's own origin, without the
+// API client's bearer handler.
+builder.Services.AddHttpClient("Manager.Self", client =>
+    client.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress));
+builder.Services.AddSingleton(sp => new NewBuildMonitor(
+    sp.GetRequiredService<IHttpClientFactory>().CreateClient("Manager.Self"),
+    NewBuildMonitor.BuildIdFromInformationalVersion(
+        typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion)));
 
 // This device's "Keep me signed in" answer, read from js/session-persist.js once the host is
 // built (below). The OIDC options are resolved lazily on first use, after that read; if they were

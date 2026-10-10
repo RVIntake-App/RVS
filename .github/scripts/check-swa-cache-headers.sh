@@ -39,6 +39,11 @@ expect "/_framework/blazor.webassembly.js"      no-cache
 expect "/_content/MudBlazor/MudBlazor.min.css"  no-cache
 expect "/$fingerprinted"                        immutable
 
+# Manager's build ID, polled by open tabs to offer a reload (issue #859).
+if [[ -f "$wwwroot/version.json" ]]; then
+  expect "/version.json"                        no-cache
+fi
+
 if (( failures > 0 )); then
   echo "::error::$failures Cache-Control check(s) failed for $site — see staticwebapp.config.json"
   exit 1

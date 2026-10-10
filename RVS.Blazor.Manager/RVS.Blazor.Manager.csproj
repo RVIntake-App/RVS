@@ -28,4 +28,16 @@
     </Content>
   </ItemGroup>
 
+  <!-- New-build prompt (issue #859). The SDK appends SourceRevisionId (the git SHA; CI passes
+       -p:SourceRevisionId=$GITHUB_SHA) to the assembly's informational version, which is how the
+       running app knows its own build. This writes the same ID to version.json in the published
+       wwwroot, so an open tab can tell when a different build has been deployed. Production
+       promotes the staging artifact unchanged, so the file carries through. -->
+  <Target Name="WriteBuildVersionFile" AfterTargets="Publish" Condition="'$(SourceRevisionId)' != ''">
+    <WriteLinesToFile File="$(PublishDir)wwwroot/version.json"
+                      Lines="{&quot;buildId&quot;:&quot;$(SourceRevisionId)&quot;}"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
 </Project>

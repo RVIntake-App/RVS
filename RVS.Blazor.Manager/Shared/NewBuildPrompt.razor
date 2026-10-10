@@ -1,0 +1,100 @@
+@implements IAsyncDisposable
+@inject NewBuildMonitor Monitor
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@*
+    Offers a reload once a newer build has been deployed (issue #859). Manager tabs stay open all
+    shift, so without this they would run the build they opened with until someone happened to
+    reload. NewBuildMonitor decides; this only wires it to tab visibility, a timer and a snackbar.
+    The reload is never forced — the manager may be mid-edit.
+*@
+
+@code {
+    private const string SnackbarKey = "rvs-new-build";
+
+    private readonly CancellationTokenSource _cts = new();
+    private DotNetObjectReference<NewBuildPrompt>? _selfRef;
+
+    protected override void OnInitialized()
+    {
+        if (!Monitor.IsEnabled) return;
+
+        Monitor.NewBuildAvailable += OnNewBuildAvailable;
+        if (Monitor.IsNewBuildAvailable) ShowPrompt();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !Monitor.IsEnabled || Monitor.IsNewBuildAvailable) return;
+
+        _selfRef = DotNetObjectReference.Create(this);
+        try
+        {
+            await JS.InvokeVoidAsync("rvsVisibility_subscribe", _selfRef);
+        }
+        catch (JSException)
+        {
+            // visibility.js missing — the timer alone still finds the new build.
+        }
+
+        _ = PollAsync(_cts.Token);
+    }
+
+    [JSInvokable]
+    public Task OnVisibilityChanged(bool visible) => Monitor.OnVisibilityChangedAsync(visible, _cts.Token);
+
+    private async Task PollAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(NewBuildMonitor.CheckInterval);
+        try
+        {
+            while (!Monitor.IsNewBuildAvailable && await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await Monitor.OnTimerTickAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Layout disposed.
+        }
+    }
+
+    private void OnNewBuildAvailable() => _ = InvokeAsync(ShowPrompt);
+
+    private void ShowPrompt()
+    {
+        Snackbar.Add("A new version of RV Intake Manager is available.", Severity.Info, options =>
+        {
+            options.RequireInteraction = true;
+            options.ShowCloseIcon = true;
+            options.DuplicatesBehavior = SnackbarDuplicatesBehavior.Prevent;
+            options.Action = "Reload";
+            options.ActionColor = Color.Primary;
+            options.OnClick = _ =>
+            {
+                Navigation.Refresh(forceReload: true);
+                return Task.CompletedTask;
+            };
+        }, SnackbarKey);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Monitor.NewBuildAvailable -= OnNewBuildAvailable;
+        await _cts.CancelAsync();
+        _cts.Dispose();
+
+        if (_selfRef is null) return;
+        try
+        {
+            await JS.InvokeVoidAsync("rvsVisibility_unsubscribe");
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException)
+        {
+            // Page is going away anyway.
+        }
+        _selfRef.Dispose();
+    }
+}
