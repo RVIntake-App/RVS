@@ -4,7 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <UserSecretsId>60c91b7a-7973-48f7-92a5-84b617240f32</UserSecretsId>
   </PropertyGroup>
 
@@ -17,10 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RVS.UI.Shared\RVS.UI.Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
   <!-- Serve the OSS third-party notices with the published bundle (covers MudBlazor,

@@ -6,14 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <title>RV Intake</title>
-    <!-- Self-hosted Space Grotesk (Spec THEME-1): the intake PWA has to render in brand
-         from cache in a service bay, so no Google Fonts CDN dependency here. -->
+    <!-- Self-hosted Space Grotesk (Spec THEME-1): one origin to load from on a weak
+         service-bay connection, so no Google Fonts CDN dependency here. -->
+    <!-- Not a PWA: no manifest and no service worker, so a deploy is live on the next
+         page load. Caching is HTTP-only, set in staticwebapp.config.json. -->
     <link href="_content/RVS.UI.Shared/fonts/fonts.css" rel="stylesheet" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link href="_content/RVS.UI.Shared/css/design-tokens.css" rel="stylesheet" />
     <link href="app.css" rel="stylesheet" />
     <link href="RVS.Blazor.Intake.styles.css" rel="stylesheet" />
-    <link href="manifest.webmanifest" rel="manifest" />
     <link rel="icon" href="favicon.ico" sizes="48x48" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -117,8 +118,6 @@
         }
         Blazor.start({ environment: env });
     </script>
-
-    <script>navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });</script>
 
 </body>
 

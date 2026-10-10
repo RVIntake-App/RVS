@@ -245,6 +245,7 @@ jobs:
           path: ./intake
 
       - name: Deploy Intake to staging
+        id: swa
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.INTAKE_SWA_TOKEN_STAGING }}
@@ -252,6 +253,16 @@ jobs:
           action: upload
           app_location: ./intake
           skip_app_build: true
+
+      - name: Checkout header check script
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          path: repo
+
+      # A wrong Cache-Control rule lets browsers keep the previous build after a deploy.
+      - name: Check Cache-Control headers
+        run: bash repo/.github/scripts/check-swa-cache-headers.sh "${{ steps.swa.outputs.static_web_app_url }}" ./intake
 
   # ---------------------------------------------------------------------------
   # Deploy Manager SWA to staging (westus2)
@@ -270,6 +281,7 @@ jobs:
           path: ./manager
 
       - name: Deploy Manager to staging
+        id: swa
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.MANAGER_SWA_TOKEN_STAGING }}
@@ -277,3 +289,13 @@ jobs:
           action: upload
           app_location: ./manager
           skip_app_build: true
+
+      - name: Checkout header check script
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+          path: repo
+
+      # A wrong Cache-Control rule lets browsers keep the previous build after a deploy.
+      - name: Check Cache-Control headers
+        run: bash repo/.github/scripts/check-swa-cache-headers.sh "${{ steps.swa.outputs.static_web_app_url }}" ./manager

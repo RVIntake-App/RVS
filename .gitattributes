@@ -67,3 +67,8 @@ licenses/** -text
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Shell scripts run on Linux runners: always LF, whatever core.autocrlf says.
+###############################################################################
+*.sh text eol=lf

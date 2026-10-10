@@ -9,7 +9,7 @@ namespace RVS.Blazor.Intake.State;
 /// <summary>
 /// Shared state container for the 8-step intake wizard.
 /// Holds all step data, current step index, validation state, and returning customer prefill data.
-/// Persisted in <c>sessionStorage</c> for offline resilience.
+/// Persisted in <c>sessionStorage</c> so a reload keeps the customer's answers.
 /// </summary>
 public sealed class IntakeWizardState
 {
