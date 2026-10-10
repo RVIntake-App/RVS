@@ -25,6 +25,14 @@ deploy-production.yml   Promote exact staging artifacts to production (never reb
 - **deploy-staging-adhoc.yml** is manual-only. It builds, tests, and optionally deploys a
   chosen non-`main` branch to the same staging environment/resources when you want ad-hoc
   validation before opening a PR.
+- **Both staging workflows check each SWA's `Cache-Control` headers after deploying it**
+  (`.github/scripts/check-swa-cache-headers.sh`): fixed-name files must be `no-cache` and
+  fingerprinted `_framework/*` files `immutable`, or browsers keep the previous build. A
+  failure means `staticwebapp.config.json` is wrong. Production promotes the same artifacts,
+  so it is not re-checked.
+- **API changes are additive for one release.** Intake and Manager clients built before a
+  deploy keep running after it, so a field or endpoint is removed in a later deploy than the
+  one that stops using it.
 - **deploy-production.yml** never rebuilds from source. It promotes the exact binaries that
   staging already validated — by downloading the staging run's uploaded artifacts (API + SWAs)
   and deploying them directly to the production resources.

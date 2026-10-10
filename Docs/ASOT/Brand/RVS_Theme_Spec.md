@@ -100,6 +100,8 @@ The Intake app is a PWA used on poor connections, so the Google Fonts CDN is not
 - [ ] Both apps' `wwwroot/index.html` `<head>` includes `<link rel="stylesheet" href="_content/RVS.UI.Shared/fonts/fonts.css">`.
 - [ ] After a publish build, confirm the `.woff2` files appear in `service-worker-assets.js`, so they're precached for offline use.
 
+> **Superseded by #858 (October 2026).** Intake is no longer a PWA: the service worker and its precache were removed so a deploy reaches customers on the next page load, so there is no `service-worker-assets.js` and the last item above no longer applies. The rule against the Google Fonts CDN still stands: self-hosting keeps a weak connection to one origin. Current caching model: `Docs/ASOT/RVS_FrontEnd.md`, "Not a PWA".
+
 ---
 
 ## 3. Shared tokens and themes

@@ -1,7 +1,7 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": [ "/appsettings.json", "/appsettings.*.json", "/css/*", "/_framework/*", "/_content/*", "/service-worker.js", "/service-worker-assets.js", "/compliance/*" ]
+    "exclude": [ "/appsettings.json", "/appsettings.*.json", "/css/*", "/_framework/*", "/_content/*", "/compliance/*" ]
   },
   "mimeTypes": {
     ".json": "application/json",
@@ -12,17 +12,24 @@
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "Referrer-Policy": "strict-origin-when-cross-origin"
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Cache-Control": "no-cache"
   },
   "routes": [
     {
-      "route": "/_framework/*",
+      "route": "/_framework/dotnet.js",
       "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "no-cache"
       }
     },
     {
-      "route": "/_content/*",
+      "route": "/_framework/blazor.webassembly.js",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    },
+    {
+      "route": "/_framework/*",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"
       }

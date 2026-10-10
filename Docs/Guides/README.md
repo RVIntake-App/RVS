@@ -30,3 +30,9 @@ is what records where each request came from.
 The consent script is not about a phone's settings. It's the words an advisor reads on a
 live call before RVS texts the customer a link, and it is also the opt-in evidence for the
 toll-free texting number's verification.
+
+## One-off cleanup
+
+| Guide | For |
+|---|---|
+| [Clear_Old_Intake_App_iPhone.md](Clear_Old_Intake_App_iPhone.md) | An iPhone that opened the intake link before #858 removed its offline copy |
