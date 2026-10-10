@@ -177,11 +177,14 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      # SourceRevisionId is the build ID the app compiles in and writes to version.json, so an
+      # open Manager tab can offer a reload when a newer build lands (issue #859).
       - name: Publish Blazor Manager
         if: needs.detect-changes.outputs.manager == 'true'
         run: >-
           dotnet publish RVS.Blazor.Manager/RVS.Blazor.Manager.csproj
           --configuration Release --output ./publish/manager
+          -p:SourceRevisionId=${{ github.sha }}
 
       - name: Upload Manager artifact
         if: needs.detect-changes.outputs.manager == 'true'
