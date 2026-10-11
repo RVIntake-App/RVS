@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
 using RVS.Domain.DTOs;
+using RVS.Domain.Integrations;
 using RVS.UI.Shared.Services;
 
 namespace RVS.UI.Shared.Tests.Services;
@@ -356,7 +357,7 @@ public class IntakeApiClientTests
     }
 
     [Fact]
-    public async Task DecodeVinAsync_ShouldDeserializeTypeAndExactMatch()
+    public async Task DecodeVinAsync_ShouldDeserializeBodyTypeAndExactMatch()
     {
         var expected = new VinDecodeResponseDto
         {
@@ -364,7 +365,7 @@ public class IntakeApiClientTests
             Manufacturer = "NASH",
             Model = "",
             Year = 2021,
-            Type = "Travel Trailer",
+            BodyType = RvBodyType.TravelTrailer,
             IsExactMatch = false
         };
 
@@ -373,7 +374,7 @@ public class IntakeApiClientTests
 
         var result = await sut.DecodeVinAsync("my-slug", "4N11A2525M0000000");
 
-        result!.Type.Should().Be("Travel Trailer");
+        result!.BodyType.Should().Be(RvBodyType.TravelTrailer);
         result.IsExactMatch.Should().BeFalse();
     }
 

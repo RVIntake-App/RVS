@@ -50,7 +50,7 @@ The central document. Field groups:
 | Disposition | `disposition` — `reasonCode`, `disposedAtUtc`, `disposedByUserId`; nullable | Core (issue #445, `Spec C-4`). Present only while `status` is `Cancelled`: set with it by the disposition endpoint, dropped when the status moves off `Cancelled`. `reasonCode` is one of `DispositionReasons.All` — `Duplicate`, `Spam`, `WrongLocation`, `CustomerWithdrew`. Manager-only, never on the customer status payload. Existing documents have no field, which reads as `null` |
 | Customer status note | `customerStatusNote` — `text`, `updatedAtUtc`, `updatedByUserId`; nullable, one per request, overwritten on edit | Core (issue #500, `Spec C-9`). Manager-authored, one-directional; rendered on the customer status page next to the status. `CustomerStatusNoteValidator` caps `text` at 280 chars and rejects `< > ` plus control characters (ordinary punctuation is allowed — it is a human sentence); the text is never written to application logs (same rule as issue text, `Spec X-7`) |
 | Customer | embedded `customerSnapshot` — name, email, phone, `preferredContact` (`Phone`/`Text`/`Email`, captured at intake per `#472`; null for pre-existing requests) | Core. `preferredContact` chooses the confirmation channel, and the profile's opt-outs veto it (see *Notification opt-outs* below, `#662`) |
-| Asset | `assetInfo` — VIN, make, model, year | Core |
+| Asset | `assetInfo` — VIN, make, model, year, `bodyType` | Core. `bodyType` is an `RvBodyType` stored as the enum name (`FifthWheel`), null when nobody said and on every request before #865 |
 | Attachments | `attachments[]` | Core |
 | Diagnostics | `diagnosticResponses[]` | Core — this is the packet's most valuable block |
 | AI | `aiEnrichment` metadata | Core |
@@ -127,7 +127,7 @@ The opt-out check before a text reads `customer-profiles` in the tenant's partit
 
 ### AssetLedgerEntry — `asset-ledger`
 
-Append-only. `assetId`, `tenantId`, `serviceRequestId`, `globalCustomerAcctId`, make/model/year, issue, status and `submittedAt`.
+Append-only. `assetId`, `tenantId`, `serviceRequestId`, `globalCustomerAcctId`, make/model/year, `bodyType` (enum name, #865), issue, status and `submittedAt`.
 
 `assetId` is the vehicle-history key from `VehicleHistoryKey.For` (Spec A-3): the VIN, or `MANUFACTURER:SERIAL` (e.g. `LANCE:152263`) for a rig with only a serial number (issue #808). The same key is used for `CustomerProfile.assetsOwned[].assetId`. `ServiceRequest.assetInfo.assetId` is not a key: it holds the VIN or serial number as entered. A serial number with no usable manufacturer gets no key, so no entry or ownership record. Entries written under #807 are not backfilled.
 

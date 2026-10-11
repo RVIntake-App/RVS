@@ -346,6 +346,7 @@ public static class PacketHtmlRenderer
         hasUnitRow |= AppendRow(sb, "Year", unit.Year?.ToString(CultureInfo.InvariantCulture));
         hasUnitRow |= AppendRow(sb, "Manufacturer", unit.Make);
         hasUnitRow |= AppendRow(sb, "Model", unit.Model);
+        hasUnitRow |= AppendRow(sb, "Type", unit.Type);
         if (unit.HasVin)
         {
             sb.Append("<p class=\"row\" style=\"margin:0 0 1mm;\">Serial# (VIN): <span>").Append(Text(unit.Vin!)).Append("</span></p>\n");

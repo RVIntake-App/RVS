@@ -139,6 +139,10 @@ public sealed record PacketUnitHeader
     public int? Year { get; init; }
     public string? Make { get; init; }
     public string? Model { get; init; }
+
+    /// <summary>The kind of RV as its display name, e.g. <c>Fifth Wheel</c> (issue #865).</summary>
+    public string? Type { get; init; }
+
     public string? Vin { get; init; }
 
     /// <summary><c>true</c> only when a non-blank VIN is present.</summary>

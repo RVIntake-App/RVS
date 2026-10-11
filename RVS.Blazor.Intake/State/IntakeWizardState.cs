@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.JSInterop;
 using RVS.Domain.DTOs;
+using RVS.Domain.Integrations;
 using RVS.Domain.Validation;
 using RVS.UI.Shared.Validation;
 
@@ -249,10 +250,11 @@ public sealed class IntakeWizardState
     public bool VinLookupSucceeded { get; set; }
 
     /// <summary>
-    /// The kind of RV the Step 3 decode inferred (e.g. "Fifth Wheel"), shown read-only on Step 4.
-    /// Not submitted with the request (issue #854).
+    /// The kind of RV (Step 4). Pre-filled from the Step 3 decode (issue #854); the customer can
+    /// change it or leave it blank, and it is submitted with the request (issue #865). The only
+    /// way a truck camper gets a type, since it has a serial number rather than a VIN.
     /// </summary>
-    public string? BodyType { get; set; }
+    public RvBodyType? BodyType { get; set; }
 
     /// <summary>
     /// Whether Step 4 was pre-filled from the plate in the Step 3 photo, so Step 4 can ask the
@@ -837,7 +839,7 @@ public sealed class IntakeWizardState
             Year = decoded.Year;
         }
 
-        BodyType = string.IsNullOrWhiteSpace(decoded.Type) ? null : decoded.Type;
+        BodyType = decoded.BodyType;
         VinLookupSucceeded = true;
         NotifyStateChanged();
     }
@@ -924,7 +926,8 @@ public sealed class IntakeWizardState
                 AssetId = VehicleSkipped ? string.Empty : VehicleIdentifierValidator.Normalize(Vin),
                 Manufacturer = string.IsNullOrWhiteSpace(Manufacturer) ? null : Manufacturer.Trim(),
                 Model = string.IsNullOrWhiteSpace(Model) ? null : Model.Trim(),
-                Year = Year
+                Year = Year,
+                BodyType = BodyType
             },
             IssueCategory = lead.IssueCategory.Trim(),
             IssueDescription = lead.IssueDescription.Trim(),
@@ -1501,8 +1504,8 @@ internal sealed class IntakeWizardStateData
     /// <summary>Whether Step 3's VIN decode filled the vehicle, so Step 4 still says so after a refresh (issue #758).</summary>
     public bool VinLookupSucceeded { get; set; }
 
-    /// <summary>The kind of RV the decode inferred, shown on Step 4 (issue #854).</summary>
-    public string? BodyType { get; set; }
+    /// <summary>The kind of RV chosen on Step 4 or inferred by the decode (issues #854, #865).</summary>
+    public RvBodyType? BodyType { get; set; }
 
     /// <summary>Whether Step 4 was pre-filled from the Step 3 photo's plate (issue #807).</summary>
     public bool VehicleDetailsFromPhoto { get; set; }

@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using RVS.Domain.Integrations;
 
 namespace RVS.Domain.Entities;
 
@@ -51,6 +52,10 @@ public class AssetLedgerEntry
 
     [JsonProperty("year")]
     public int? Year { get; init; }
+
+    /// <summary>The kind of RV as submitted at intake (issue #865), stored as the enum name.</summary>
+    [JsonProperty("bodyType")]
+    public RvBodyType? BodyType { get; init; }
 
     [JsonProperty("issueCategory")]
     public string? IssueCategory { get; init; }

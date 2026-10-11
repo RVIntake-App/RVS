@@ -1,6 +1,7 @@
 using FluentAssertions;
 using RVS.Blazor.Intake.State;
 using RVS.Domain.DTOs;
+using RVS.Domain.Integrations;
 using RVS.UI.Shared.Tests.Fakes;
 
 namespace RVS.UI.Shared.Tests.State;
@@ -771,16 +772,16 @@ public class IntakeWizardStateTests
     {
         var state = CreateState();
 
-        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, BodyType = RvBodyType.FifthWheel, IsExactMatch = true });
 
-        state.BodyType.Should().Be("Fifth Wheel");
+        state.BodyType.Should().Be(RvBodyType.FifthWheel);
     }
 
     [Fact]
     public void ApplyVinDecode_WhenTheDecodeHasNoBodyType_ShouldClearAnEarlierOne()
     {
         var state = CreateState();
-        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, BodyType = RvBodyType.FifthWheel, IsExactMatch = true });
 
         state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "1HGBH41JXMN109186", Manufacturer = "Winnebago", Model = "", Year = 2020, IsExactMatch = true });
 
@@ -791,7 +792,7 @@ public class IntakeWizardStateTests
     public void SkipVehicle_ShouldClearTheBodyType()
     {
         var state = CreateState();
-        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, BodyType = RvBodyType.FifthWheel, IsExactMatch = true });
 
         state.SkipVehicle();
 
@@ -803,13 +804,13 @@ public class IntakeWizardStateTests
     {
         var jsRuntime = new InMemoryWebStorageJSRuntime();
         var before = new IntakeWizardState(jsRuntime) { Slug = "test-slug" };
-        before.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+        before.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, BodyType = RvBodyType.FifthWheel, IsExactMatch = true });
         await before.PersistAsync();
 
         var after = new IntakeWizardState(jsRuntime);
         await after.RestoreAsync();
 
-        after.BodyType.Should().Be("Fifth Wheel");
+        after.BodyType.Should().Be(RvBodyType.FifthWheel);
     }
 
     [Fact]
@@ -1114,6 +1115,26 @@ public class IntakeWizardStateTests
         var errors = state.ValidateCurrentStep();
 
         errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void BuildCreateRequest_ShouldSubmitTheBodyType()
+    {
+        var state = CreateState();
+        state.Vin = "1HGBH41JXMN109186";
+        state.BodyType = RvBodyType.ClassC;
+
+        state.BuildCreateRequest().Asset.BodyType.Should().Be(RvBodyType.ClassC);
+    }
+
+    [Fact]
+    public void BuildCreateRequest_WhenTheVehicleWasSkipped_ShouldStillSubmitAChosenBodyType()
+    {
+        var state = CreateState();
+        state.SkipVehicle();
+        state.BodyType = RvBodyType.TruckCamper;
+
+        state.BuildCreateRequest().Asset.BodyType.Should().Be(RvBodyType.TruckCamper);
     }
 
     [Fact]

@@ -104,7 +104,7 @@ It is a **pure transform**: guard clauses, then read-only mapping. No repository
 
 | # | Section | Degradation |
 |---|---|---|
-| 1 | Unit header — year / make / model / VIN | each field independent; `HasVin` lets the renderer drop the VIN line and keep the rest |
+| 1 | Unit header — year / make / model / type / VIN | each field independent; type is the `RvBodyType` display name (#865); `HasVin` lets the renderer drop the VIN line and keep the rest |
 | 2 | Customer — name, phone, email, preferred contact | fields null when absent; `PreferredContact` is one of `Phone` / `Text` / `Email` (`PreferredContactMethod`), captured at intake (`#472`), null only for pre-existing requests |
 | 3 | Origin — location, submission timestamp, short reference code | location fields null if context omits them; reference code always present |
 | 4 | Issue category | null when unclassified — it is advisory |

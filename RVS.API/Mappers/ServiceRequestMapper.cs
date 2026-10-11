@@ -222,7 +222,8 @@ public static class ServiceRequestMapper
                 AssetId = dto.Asset.AssetId.Trim(),
                 Manufacturer = dto.Asset.Manufacturer?.Trim(),
                 Model = dto.Asset.Model?.Trim(),
-                Year = dto.Asset.Year
+                Year = dto.Asset.Year,
+                BodyType = dto.Asset.BodyType
             },
             DiagnosticResponses = dto.DiagnosticResponses?
                 .Select(d => new DiagnosticResponseEmbedded
@@ -285,7 +286,8 @@ public static class ServiceRequestMapper
                 AssetId = dto.Asset.AssetId.Trim(),
                 Manufacturer = dto.Asset.Manufacturer?.Trim(),
                 Model = dto.Asset.Model?.Trim(),
-                Year = dto.Asset.Year
+                Year = dto.Asset.Year,
+                BodyType = dto.Asset.BodyType
             };
         }
 
@@ -344,7 +346,8 @@ public static class ServiceRequestMapper
             AssetId = asset.AssetId,
             Manufacturer = asset.Manufacturer,
             Model = asset.Model,
-            Year = asset.Year
+            Year = asset.Year,
+            BodyType = asset.BodyType
         };
     }
 

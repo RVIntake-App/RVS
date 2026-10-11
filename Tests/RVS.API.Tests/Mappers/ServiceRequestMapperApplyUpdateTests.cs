@@ -2,6 +2,7 @@ using FluentAssertions;
 using RVS.API.Mappers;
 using RVS.Domain.DTOs;
 using RVS.Domain.Entities;
+using RVS.Domain.Integrations;
 
 namespace RVS.API.Tests.Mappers;
 
@@ -210,7 +211,8 @@ public class ServiceRequestMapperApplyUpdateTests
                 AssetId = "  VIN999  ",
                 Manufacturer = "  Thor  ",
                 Model = "  Aria  ",
-                Year = 2024
+                Year = 2024,
+                BodyType = RvBodyType.ClassA
             }
         };
 
@@ -220,6 +222,7 @@ public class ServiceRequestMapperApplyUpdateTests
         entity.AssetInfo.Manufacturer.Should().Be("Thor");
         entity.AssetInfo.Model.Should().Be("Aria");
         entity.AssetInfo.Year.Should().Be(2024);
+        entity.AssetInfo.BodyType.Should().Be(RvBodyType.ClassA);
     }
 
     private static ServiceRequest BuildServiceRequest() => new()

@@ -164,6 +164,31 @@ public class IntakeOrchestrationServiceTests
         result.ServiceRequest.TenantId.Should().Be("ten_test");
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WhenBodyTypeSubmitted_ShouldStoreItOnTheRequestAndTheLedger()
+    {
+        SetupFullHappyPath();
+        var request = BuildValidRequest();
+        request = request with { Asset = request.Asset with { BodyType = RvBodyType.FifthWheel } };
+
+        var (serviceRequest, _, _, _) = await _sut.ExecuteAsync("test-slug", request);
+
+        serviceRequest.AssetInfo.BodyType.Should().Be(RvBodyType.FifthWheel);
+        _ledgerRepoMock.Verify(r => r.AppendAsync(
+            It.Is<AssetLedgerEntry>(e => e.BodyType == RvBodyType.FifthWheel),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenBodyTypeOmitted_ShouldStoreNull()
+    {
+        SetupFullHappyPath();
+
+        var (serviceRequest, _, _, _) = await _sut.ExecuteAsync("test-slug", BuildValidRequest());
+
+        serviceRequest.AssetInfo.BodyType.Should().BeNull();
+    }
+
     // ── Step 2: GlobalCustomerAcct Resolution ────────────────────────────────
 
     [Fact]
