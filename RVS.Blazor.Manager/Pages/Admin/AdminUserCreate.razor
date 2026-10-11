@@ -1,6 +1,6 @@
 @page "/admin/tenants/{TenantId}/users/new"
 @inject AdminApiClient AdminApi
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 
 @* Add user to tenant (Spec P-2) with a re-issuable set-password link (P-3), issue #563. *@
 <PageTitle>RVS Admin — Add user</PageTitle>
@@ -207,7 +207,7 @@ else
                 PasswordTicketUrl = ticket.PasswordTicketUrl,
                 PasswordTicketExpiresAtUtc = ticket.ExpiresAtUtc
             };
-            Snackbar.Add("New set-password link issued.", Severity.Success);
+            Toasts.Success("New set-password link issued.");
         }
         catch (AccessTokenNotAvailableException ex)
         {
@@ -219,7 +219,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toasts.Error(ex.Message);
         }
         finally
         {

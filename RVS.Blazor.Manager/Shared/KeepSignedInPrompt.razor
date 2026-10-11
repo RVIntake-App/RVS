@@ -1,4 +1,5 @@
 @inject IJSRuntime JS
+@inject ToastService Toasts
 
 @*
     Asks once per device, after sign-in, whether to keep the manager signed in across browser
@@ -6,15 +7,23 @@
     persists nothing and the session ends with the tab, which keeps shared service-desk computers
     from staying signed in. The answer is stored on the device, so the prompt does not return; the
     profile menu (LoginDisplay) can change or reset it (issue #616).
+
+    Shown as a toast that waits for an answer (issue #867), so it stacks with the other
+    bottom-right notices instead of covering them. It has no close button: closing would leave
+    the question unanswered.
 *@
 
-@if (_ask)
-{
-    <MudPaper Elevation="4" Class="pa-4"
-              Style="position: fixed; bottom: 16px; right: 16px; left: 16px; margin-left: auto; max-width: 440px; z-index: 1400;"
-              role="dialog" aria-labelledby="keep-signed-in-title">
+@code {
+    private const string ToastKey = "rvs-keep-signed-in";
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private bool _resolved;
+
+    private RenderFragment PromptContent => @<div role="group" aria-labelledby="keep-signed-in-title">
         <MudText Typo="Typo.subtitle1" Class="mb-1" id="keep-signed-in-title">Keep me signed in on this device?</MudText>
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+        <MudText Typo="Typo.body2" Class="mb-3">
             You'll stay signed in for up to 30 days (7 days without use), so status links in packet
             emails open straight into the app. @KeepSignedInPolicy.SharedComputerWarning
         </MudText>
@@ -22,15 +31,7 @@
             <MudButton Variant="Variant.Text" OnClick="@(() => ChooseAsync(false))">Not on this device</MudButton>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => ChooseAsync(true))">Keep me signed in</MudButton>
         </MudStack>
-    </MudPaper>
-}
-
-@code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthStateTask { get; set; }
-
-    private bool _resolved;
-    private bool _ask;
+    </div>;
 
     // Runs on every cascaded auth-state change, so it also fires when the sign-in callback
     // completes inside an already-rendered layout.
@@ -42,12 +43,15 @@
         if (state.User.Identity?.IsAuthenticated != true) return;
 
         _resolved = true;
-        _ask = await JS.InvokeAsync<string?>("rvsSession_getPersistPreference") is null;
+        if (await JS.InvokeAsync<string?>("rvsSession_getPersistPreference") is null)
+        {
+            Toasts.Prompt(PromptContent, ToastKey);
+        }
     }
 
     private async Task ChooseAsync(bool persist)
     {
         await JS.InvokeVoidAsync("rvsSession_setPersist", persist);
-        _ask = false;
+        Toasts.Dismiss(ToastKey);
     }
 }

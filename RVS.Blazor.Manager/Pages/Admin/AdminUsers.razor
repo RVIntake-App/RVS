@@ -1,6 +1,6 @@
 @page "/admin/tenants/{TenantId}/users"
 @inject AdminApiClient AdminApi
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 
 @* A tenant's users: list, edit role and locations, disable, delete (Spec P-9 … P-12, issue #647). *@
 <PageTitle>RVS Admin — Users</PageTitle>
@@ -259,7 +259,7 @@ else
                 LocationIds = TenantProvisioningValidator.IsLocationScopedRole(_edit.Role) ? [.. _edit.LocationIds] : []
             }));
             _editingUserId = null;
-            Snackbar.Add("User saved. An open session picks it up within an hour.", Severity.Success);
+            Toasts.Success("User saved. An open session picks it up within an hour.");
         });
 
     private Task SetAccessAsync(TenantUserSummaryResponseDto user, bool enabled) =>
@@ -267,7 +267,7 @@ else
         {
             Replace(await AdminApi.SetUserAccessAsync(TenantId, user.UserId,
                 new TenantUserAccessUpdateRequestDto { LoginsEnabled = enabled }));
-            Snackbar.Add(enabled ? "Logins enabled." : "Logins disabled. An open session ends within an hour.", Severity.Success);
+            Toasts.Success(enabled ? "Logins enabled." : "Logins disabled. An open session ends within an hour.");
         });
 
     private Task NewTicketAsync(TenantUserSummaryResponseDto user) =>
@@ -283,7 +283,7 @@ else
             await AdminApi.DeleteUserAsync(TenantId, user.UserId);
             _users.RemoveAll(u => u.UserId == user.UserId);
             _deletingUserId = null;
-            Snackbar.Add($"{user.Email} deleted.", Severity.Success);
+            Toasts.Success($"{user.Email} deleted.");
         });
 
     private async Task RunAsync(TenantUserSummaryResponseDto user, Func<Task> action)
@@ -303,7 +303,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Toasts.Error(ex.Message);
         }
         finally
         {

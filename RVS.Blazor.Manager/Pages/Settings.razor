@@ -1,6 +1,6 @@
 @page "/settings"
 @inject LookupApiClient LookupClient
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 
 <PageTitle>RV Intake Manager — Settings</PageTitle>
 
@@ -374,7 +374,7 @@
             await _form.ValidateAsync();
             if (!_form.IsValid)
             {
-                Snackbar.Add("Fix the highlighted fields and try again.", Severity.Warning);
+                Toasts.Warning("Fix the highlighted fields and try again.");
                 return;
             }
         }
@@ -390,11 +390,11 @@
             _config = await LookupClient.GetTenantConfigAsync();
             _accessGate = await LookupClient.GetAccessGateStatusAsync();
 
-            Snackbar.Add("Settings saved.", Severity.Success);
+            Toasts.Success("Settings saved.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to save settings: {ex.Message}", Severity.Error);
+            Toasts.Error($"Failed to save settings: {ex.Message}");
         }
         finally
         {
@@ -429,11 +429,11 @@
                 .Select(c => new CapabilityEditModel(c))
                 .ToList();
 
-            Snackbar.Add("Capabilities saved.", Severity.Success);
+            Toasts.Success("Capabilities saved.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to save capabilities: {ex.Message}", Severity.Error);
+            Toasts.Error($"Failed to save capabilities: {ex.Message}");
         }
         finally
         {
@@ -469,7 +469,7 @@
     {
         if (string.IsNullOrWhiteSpace(_capForm.Name) || string.IsNullOrWhiteSpace(_capForm.Code))
         {
-            Snackbar.Add("Name and code are required.", Severity.Warning);
+            Toasts.Warning("Name and code are required.");
             return;
         }
 
@@ -478,7 +478,7 @@
             // Add new
             if (_capabilities.Any(c => string.Equals(c.Code, _capForm.Code.Trim(), StringComparison.OrdinalIgnoreCase)))
             {
-                Snackbar.Add($"A capability with code '{_capForm.Code}' already exists.", Severity.Warning);
+                Toasts.Warning($"A capability with code '{_capForm.Code}' already exists.");
                 return;
             }
 

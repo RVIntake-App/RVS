@@ -1,5 +1,5 @@
 @inject IJSRuntime JS
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 
 @* A read-only value with a full-width Copy button, sized for a phone (Spec P-8, issue #563). *@
 <MudStack Spacing="1">
@@ -30,11 +30,11 @@
         try
         {
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", Value);
-            Snackbar.Add($"{Label} copied.", Severity.Success);
+            Toasts.Success($"{Label} copied.");
         }
         catch (JSException)
         {
-            Snackbar.Add("Could not copy. Press and hold the text to copy it.", Severity.Warning);
+            Toasts.Warning("Could not copy. Press and hold the text to copy it.");
         }
     }
 }

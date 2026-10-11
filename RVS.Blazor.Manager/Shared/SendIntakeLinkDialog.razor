@@ -2,7 +2,7 @@
 @inject IntakeInviteApiClient InviteClient
 @inject LookupApiClient LookupClient
 @inject IJSRuntime JS
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 @implements IAsyncDisposable
 
 @* ──────────────────────────────────────────────────────────────────────────
@@ -525,7 +525,7 @@
             }
             else
             {
-                Snackbar.Add(emailMode ? $"Link emailed to {firstName}." : $"Link sent to {firstName}.", Severity.Success);
+                Toasts.Success(emailMode ? $"Link emailed to {firstName}." : $"Link sent to {firstName}.");
                 ClearForm();
             }
 

@@ -1,18 +1,18 @@
 @implements IAsyncDisposable
 @inject NewBuildMonitor Monitor
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
 @*
     Offers a reload once a newer build has been deployed (issue #859). Manager tabs stay open all
     shift, so without this they would run the build they opened with until someone happened to
-    reload. NewBuildMonitor decides; this only wires it to tab visibility, a timer and a snackbar.
+    reload. NewBuildMonitor decides; this only wires it to tab visibility, a timer and a toast (issue #867).
     The reload is never forced — the manager may be mid-edit.
 *@
 
 @code {
-    private const string SnackbarKey = "rvs-new-build";
+    private const string ToastKey = "rvs-new-build";
 
     private readonly CancellationTokenSource _cts = new();
     private DotNetObjectReference<NewBuildPrompt>? _selfRef;
@@ -65,19 +65,11 @@
 
     private void ShowPrompt()
     {
-        Snackbar.Add("A new version of RV Intake Manager is available.", Severity.Info, options =>
+        Toasts.Prompt("A new version of RV Intake Manager is available.", "Reload", () =>
         {
-            options.RequireInteraction = true;
-            options.ShowCloseIcon = true;
-            options.DuplicatesBehavior = SnackbarDuplicatesBehavior.Prevent;
-            options.Action = "Reload";
-            options.ActionColor = Color.Primary;
-            options.OnClick = _ =>
-            {
-                Navigation.Refresh(forceReload: true);
-                return Task.CompletedTask;
-            };
-        }, SnackbarKey);
+            Navigation.Refresh(forceReload: true);
+            return Task.CompletedTask;
+        }, ToastKey);
     }
 
     public async ValueTask DisposeAsync()
