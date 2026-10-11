@@ -249,6 +249,12 @@ public sealed class IntakeWizardState
     public bool VinLookupSucceeded { get; set; }
 
     /// <summary>
+    /// The kind of RV the Step 3 decode inferred (e.g. "Fifth Wheel"), shown read-only on Step 4.
+    /// Not submitted with the request (issue #854).
+    /// </summary>
+    public string? BodyType { get; set; }
+
+    /// <summary>
     /// Whether Step 4 was pre-filled from the plate in the Step 3 photo, so Step 4 can ask the
     /// customer to check it (issue #807).
     /// </summary>
@@ -806,30 +812,52 @@ public sealed class IntakeWizardState
     }
 
     /// <summary>
-    /// Applies a successful Step 3 VIN decode. The decoder wins where it has a value; where it has
-    /// none, whatever the photo pre-filled is kept.
+    /// Applies a successful Step 3 VIN decode (Spec A-10). The decoded brand and model only fill
+    /// blanks: vPIC returns the brand registered to the maker's WMI, so even a clean decode can name
+    /// the wrong brand of a multi-brand maker (an Arctic Fox reads as NASH, issue #854), and its model
+    /// can be a company name. The plate is the better source for both. An exact decode wins for the
+    /// year where it has one; a partial one only fills a blank year.
     /// </summary>
     public void ApplyVinDecode(VinDecodeResponseDto decoded)
     {
         ArgumentNullException.ThrowIfNull(decoded);
 
-        if (!string.IsNullOrWhiteSpace(decoded.Manufacturer))
+        if (!string.IsNullOrWhiteSpace(decoded.Manufacturer) && string.IsNullOrWhiteSpace(Manufacturer))
         {
             Manufacturer = decoded.Manufacturer;
         }
 
-        if (!string.IsNullOrWhiteSpace(decoded.Model))
+        if (!string.IsNullOrWhiteSpace(decoded.Model) && string.IsNullOrWhiteSpace(Model))
         {
             Model = decoded.Model;
         }
 
-        if (decoded.Year > 0)
+        if (decoded.Year > 0 && (decoded.IsExactMatch || Year is null or <= 0))
         {
             Year = decoded.Year;
         }
 
+        BodyType = string.IsNullOrWhiteSpace(decoded.Type) ? null : decoded.Type;
         VinLookupSucceeded = true;
         NotifyStateChanged();
+    }
+
+    /// <summary>
+    /// Continue while editing a step from Review. Normally that returns straight to Review, but
+    /// after a VIN decode in Step 3 it stops at Step 4 first so the customer checks the vehicle,
+    /// since even a clean decode can name the wrong brand; Continue there then returns to Review
+    /// (Spec A-10, issue #854).
+    /// </summary>
+    public async Task ContinueFromEditAsync()
+    {
+        if (CurrentStep == 3 && VinLookupSucceeded && ReturnToStepAfterEdit.HasValue)
+        {
+            await GoToStepAsync(4);
+            return;
+        }
+
+        ReturnToStepAfterEdit = null;
+        await GoToStepAsync(TotalStepCount);
     }
 
     /// <summary>
@@ -841,6 +869,7 @@ public sealed class IntakeWizardState
         Vin = string.Empty;
         VehicleSkipped = true;
         VinLookupSucceeded = false;
+        BodyType = null;
         VehicleDetailsFromPhoto = false;
         Manufacturer = null;
         Model = null;
@@ -1002,6 +1031,7 @@ public sealed class IntakeWizardState
             Model = Model,
             Year = Year,
             VinLookupSucceeded = VinLookupSucceeded,
+            BodyType = BodyType,
             VehicleDetailsFromPhoto = VehicleDetailsFromPhoto,
             IssueCategory = IssueCategory,
             IsCategorySuggestedByAi = IsCategorySuggestedByAi,
@@ -1063,6 +1093,7 @@ public sealed class IntakeWizardState
             Model = data.Model;
             Year = data.Year;
             VinLookupSucceeded = data.VinLookupSucceeded;
+            BodyType = data.BodyType;
             VehicleDetailsFromPhoto = data.VehicleDetailsFromPhoto;
             IssueCategory = data.IssueCategory;
             IsCategorySuggestedByAi = data.IsCategorySuggestedByAi;
@@ -1166,6 +1197,7 @@ public sealed class IntakeWizardState
         Model = null;
         Year = null;
         VinLookupSucceeded = false;
+        BodyType = null;
         VehicleDetailsFromPhoto = false;
         IssueCategory = string.Empty;
         IsCategorySuggestedByAi = false;
@@ -1468,6 +1500,9 @@ internal sealed class IntakeWizardStateData
 
     /// <summary>Whether Step 3's VIN decode filled the vehicle, so Step 4 still says so after a refresh (issue #758).</summary>
     public bool VinLookupSucceeded { get; set; }
+
+    /// <summary>The kind of RV the decode inferred, shown on Step 4 (issue #854).</summary>
+    public string? BodyType { get; set; }
 
     /// <summary>Whether Step 4 was pre-filled from the Step 3 photo's plate (issue #807).</summary>
     public bool VehicleDetailsFromPhoto { get; set; }

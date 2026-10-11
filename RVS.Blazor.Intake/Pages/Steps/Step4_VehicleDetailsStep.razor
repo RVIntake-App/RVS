@@ -13,6 +13,11 @@
             <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true"
                       Icon="@Icons.Material.Filled.Pin">
                 @(State.HasVin ? "VIN" : "Serial number"): @State.Vin
+                @* Issue #854: inferred from the decode; shown for the customer's reference, not submitted. *@
+                @if (!string.IsNullOrWhiteSpace(State.BodyType))
+                {
+                    @: · @State.BodyType
+                }
             </MudAlert>
         }
 
@@ -25,8 +30,10 @@
         }
         else if (State.VinLookupSucceeded)
         {
-            <MudAlert Severity="Severity.Success" Variant="Variant.Filled" Dense="true">
-                Vehicle information retrieved from VIN lookup.
+            @* Issue #854: even a clean decode can name the wrong brand of a multi-brand maker
+               (an Arctic Fox reads as NASH), so the customer always checks it here. *@
+            <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true">
+                We looked up your RV from its VIN. Check the brand, model and year below and change anything that's wrong.
             </MudAlert>
         }
         else if (State.VehicleDetailsFromPhoto)

@@ -753,17 +753,162 @@ public class IntakeWizardStateTests
     }
 
     [Fact]
-    public void ApplyVinDecode_ShouldPreferDecodedValuesAndFallBackToThePhoto()
+    public void ApplyVinDecode_WhenExact_ShouldOverrideThePhotoYearButNotItsBrandOrModel()
     {
         var state = CreateState();
         state.ApplyVehicleDetailsFromPhoto("Photo Make", "Photo Model", 2019);
 
-        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "1HGBH41JXMN109186", Manufacturer = "Winnebago", Model = "", Year = 2020 });
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "1HGBH41JXMN109186", Manufacturer = "Winnebago", Model = "Vista", Year = 2020, IsExactMatch = true });
 
-        state.Manufacturer.Should().Be("Winnebago");
+        state.Manufacturer.Should().Be("Photo Make");
         state.Model.Should().Be("Photo Model");
         state.Year.Should().Be(2020);
         state.VinLookupSucceeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ApplyVinDecode_ShouldKeepTheDecodedBodyType()
+    {
+        var state = CreateState();
+
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+
+        state.BodyType.Should().Be("Fifth Wheel");
+    }
+
+    [Fact]
+    public void ApplyVinDecode_WhenTheDecodeHasNoBodyType_ShouldClearAnEarlierOne()
+    {
+        var state = CreateState();
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "1HGBH41JXMN109186", Manufacturer = "Winnebago", Model = "", Year = 2020, IsExactMatch = true });
+
+        state.BodyType.Should().BeNull();
+    }
+
+    [Fact]
+    public void SkipVehicle_ShouldClearTheBodyType()
+    {
+        var state = CreateState();
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+
+        state.SkipVehicle();
+
+        state.BodyType.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task PersistAndRestore_ShouldKeepTheBodyTypeAcrossAReload()
+    {
+        var jsRuntime = new InMemoryWebStorageJSRuntime();
+        var before = new IntakeWizardState(jsRuntime) { Slug = "test-slug" };
+        before.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, Type = "Fifth Wheel", IsExactMatch = true });
+        await before.PersistAsync();
+
+        var after = new IntakeWizardState(jsRuntime);
+        await after.RestoreAsync();
+
+        after.BodyType.Should().Be("Fifth Wheel");
+    }
+
+    [Fact]
+    public void ApplyVinDecode_WhenThePlateHadNoModel_ShouldFillTheDecodedModel()
+    {
+        var state = CreateState();
+        state.ApplyVehicleDetailsFromPhoto("Photo Make", null, 2019);
+
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "1HGBH41JXMN109186", Manufacturer = "Winnebago", Model = "Vista", Year = 2020, IsExactMatch = true });
+
+        state.Model.Should().Be("Vista");
+    }
+
+    [Fact]
+    public void ApplyVinDecode_WhenExactButBlank_ShouldKeepThePhotoValues()
+    {
+        var state = CreateState();
+        state.ApplyVehicleDetailsFromPhoto("Photo Make", "Photo Model", 2019);
+
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "1HGBH41JXMN109186", Manufacturer = "Winnebago", Model = "", Year = 0, IsExactMatch = true });
+
+        state.Model.Should().Be("Photo Model");
+        state.Year.Should().Be(2019);
+    }
+
+    [Fact]
+    public void ApplyVinDecode_WhenACleanDecodeNamesTheWrongBrandAndModel_ShouldKeepThePlateValues()
+    {
+        // Issue #854, from the live vPIC response: an Arctic Fox VIN decodes clean (ErrorCode 0) as
+        // NASH, the only make registered to Northwood's WMI, with the company name as its model.
+        var state = CreateState();
+        state.ApplyVehicleDetailsFromPhoto("Arctic Fox", "25Y", 2021);
+
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "Northwood Investments Corporation", Year = 2021, IsExactMatch = true });
+
+        state.Manufacturer.Should().Be("Arctic Fox");
+        state.Model.Should().Be("25Y");
+    }
+
+    [Fact]
+    public void ApplyVinDecode_WithNoPhoto_ShouldFillTheDecodedBrand()
+    {
+        var state = CreateState();
+
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, IsExactMatch = true });
+
+        state.Manufacturer.Should().Be("NASH");
+        state.Model.Should().BeNull();
+        state.Year.Should().Be(2021);
+    }
+
+    [Fact]
+    public void ApplyVinDecode_WhenPartial_ShouldKeepThePhotoValuesAndFillOnlyBlanks()
+    {
+        var state = CreateState();
+        state.ApplyVehicleDetailsFromPhoto("Arctic Fox", null, 2021);
+
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "24M", Year = 2020, IsExactMatch = false });
+
+        state.Manufacturer.Should().Be("Arctic Fox");
+        state.Model.Should().Be("24M");
+        state.Year.Should().Be(2021);
+        state.VinLookupSucceeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(true, 4)]
+    [InlineData(false, 8)]
+    public async Task ContinueFromEditAsync_FromStep3_ShouldStopAtStep4AfterAnyDecode(bool decoded, int expectedStep)
+    {
+        // Issue #854: even a clean decode can name the wrong brand, so the customer always checks Step 4.
+        var state = CreateState();
+        await state.GoToStepAsync(8);
+        state.ReturnToStepAfterEdit = 8;
+        await state.GoToStepAsync(3);
+        if (decoded)
+        {
+            state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, IsExactMatch = true });
+        }
+
+        await state.ContinueFromEditAsync();
+
+        state.CurrentStep.Should().Be(expectedStep);
+    }
+
+    [Fact]
+    public async Task ContinueFromEditAsync_FromStep4AfterADecode_ShouldReturnToReview()
+    {
+        var state = CreateState();
+        await state.GoToStepAsync(8);
+        state.ReturnToStepAfterEdit = 8;
+        await state.GoToStepAsync(3);
+        state.ApplyVinDecode(new VinDecodeResponseDto { Vin = "4N15Z3525M0XXXXXX", Manufacturer = "NASH", Model = "", Year = 2021, IsExactMatch = true });
+        await state.ContinueFromEditAsync();
+
+        await state.ContinueFromEditAsync();
+
+        state.CurrentStep.Should().Be(8);
+        state.ReturnToStepAfterEdit.Should().BeNull();
     }
 
     [Fact]

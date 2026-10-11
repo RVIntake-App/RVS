@@ -17,4 +17,16 @@ public sealed record VinDecodeResponseDto
 
     /// <summary>Model year.</summary>
     public required int Year { get; init; }
+
+    /// <summary>
+    /// The kind of RV as a display name (e.g. "Fifth Wheel", "Class C Motorhome"), when the decode
+    /// says which; see <c>RvBodyType</c>. Shown on Step 4, not stored on the request.
+    /// </summary>
+    public string? Type { get; init; }
+
+    /// <summary>
+    /// Whether the decode was exact (vPIC <c>ErrorCode</c> 0). Only an exact decode overrides the year
+    /// read off the plate; the plate's brand and model are never overridden (Spec A-10).
+    /// </summary>
+    public bool IsExactMatch { get; init; }
 }
