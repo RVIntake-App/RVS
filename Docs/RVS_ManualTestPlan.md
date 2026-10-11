@@ -132,6 +132,7 @@ A-7's token-based prefill is cancelled and removed (Spec A-7, #815). Only opt-in
 - [ ] Submit a complete, valid intake. Success comes back quickly (spec target is P95 under 2 s), without waiting on the packet or the email.
 - [ ] On the review step, tap **Submit** and then **Back** immediately. Exactly one service request is created.
 - [ ] The confirmation screen shows a status link and says a confirmation is coming by text or email.
+- [ ] The confirmation screen has no **Return Home** button; **Check Request Status** is its only action (#870).
 - [ ] Check that the confirmation goes out on exactly one channel, following Spec A-2's routing table:
   - [ ] Preferred **Email** → one confirmation email, no text.
   - [ ] Preferred **Phone** → one confirmation email, no text.
