@@ -196,6 +196,18 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1)
             }));
 
+    // POST api/status/link (issue #862) sends an email per call, so it gets far fewer permits
+    // than the status read. StatusLinkService adds a per-account cooldown on top, which covers
+    // what a per-IP limit cannot: many callers aiming at one inbox.
+    options.AddPolicy("StatusLinkEndpoint", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            ClientIpResolver.Resolve(httpContext),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10)
+            }));
+
     options.AddPolicy("IntakeEndpoint", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             ClientIpResolver.Resolve(httpContext),
@@ -399,6 +411,7 @@ builder.Services.AddScoped<ITenantConfigService, TenantConfigService>();
 builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
 builder.Services.AddScoped<ICustomerProfileService, CustomerProfileService>();
 builder.Services.AddScoped<IGlobalCustomerAcctService, GlobalCustomerAcctService>();
+builder.Services.AddScoped<IStatusLinkService, StatusLinkService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();

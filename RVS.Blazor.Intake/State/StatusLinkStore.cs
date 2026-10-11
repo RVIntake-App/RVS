@@ -6,7 +6,7 @@ namespace RVS.Blazor.Intake.State;
 
 /// <summary>
 /// Remembers the customer's status-page token on this device so "Check Request Status" can open
-/// it directly instead of asking for the confirmation number (issue #716).
+/// it directly instead of asking for an email address to send it to (issues #716, #862).
 /// <para>
 /// Persisted in <c>localStorage</c>, not <c>sessionStorage</c>: the point is that it survives the
 /// tab being closed. It is stored alongside the expiry the API reported, and a link past that

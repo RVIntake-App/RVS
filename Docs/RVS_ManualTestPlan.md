@@ -40,7 +40,7 @@ Version 1.0 was written against the build of September 10. Since then:
 
 ### 1.1 Access and entry (A-1)
 
-- [ ] Open the site root (`rvintake.com`). Confirm it shows a hero band and two equal tiles, one to start a request (`/intake`) and one to check a request's status (`/status`).
+- [ ] Open the site root (`rvintake.com`). Confirm it shows a hero band and one tile, to check a request's status (`/status`). There is no tile to start a request (issue #862): customers start one from their dealer's link.
 - [ ] Open an intake link (`rvintake.com/{locationSlug}`) with no prior login or account. The landing step loads directly and shows the location name, plus the dealership name when the two differ.
 - [ ] Confirm the landing step previews what the form will ask for and shows a single full-width start button with a time estimate.
 - [ ] Confirm no password, magic link or account-creation step appears anywhere in the flow.
@@ -154,11 +154,20 @@ A-7's token-based prefill is cancelled and removed (Spec A-7, #815). Only opt-in
 
 ### 1.7b Remembered status link (X-1, #716)
 
-- [ ] After submitting on a phone, go to `rvintake.com` and tap the status tile. The request's status page opens straight away, without asking for the confirmation number.
-- [ ] Open `rvintake.com/status?manual=true`. The form for looking up a different number appears.
+- [ ] After submitting on a phone, go to `rvintake.com` and tap the status tile. The request's status page opens straight away, without asking for an email address.
+- [ ] Open `rvintake.com/status?manual=true`. The email form appears.
 - [ ] Load a different request's status link on the same device, then open `/status`. The most recently loaded link opens.
-- [ ] Use an expired or unknown token (edit a character in the URL), then open `/status`. The bad token is forgotten, and the lookup form appears instead of an error loop.
-- [ ] In a private or incognito window, `/status` shows the lookup form and does not break.
+- [ ] Use an expired or unknown token (edit a character in the URL). The page offers **Email Me a New Link**. Then open `/status`: the bad token is forgotten, and the email form appears instead of an error loop.
+- [ ] In a private or incognito window, `/status` shows the email form and does not break.
+- [ ] The status page has no **Return Home** or **Look up a different confirmation number** link at the bottom (#862).
+
+### 1.7c Emailed status link (X-1, #862)
+
+- [ ] On `/status?manual=true`, enter the email used on a request. The page says to check your email. The email arrives with a working **Check request status** link, and it names no dealer.
+- [ ] Enter an address that has never submitted a request. The page shows exactly the same message, and no email is sent.
+- [ ] Enter `not-an-email`. The field shows an error and nothing is sent.
+- [ ] Ask again for the same address within 5 minutes. The page says the same thing, but no second email arrives.
+- [ ] For a customer whose link has expired, ask for a new one. The emailed link opens the status page. The old link now shows **Link Not Found**, since the new token replaced it.
 - [ ] The privacy policy has an "On your device" section that describes this.
 
 ### 1.8 Advisor invite, customer side (A-14)
