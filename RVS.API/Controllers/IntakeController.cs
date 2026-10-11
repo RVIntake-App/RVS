@@ -196,7 +196,9 @@ public class IntakeController : ControllerBase
             Vin = result.Vin,
             Manufacturer = result.Manufacturer,
             Model = result.Model,
-            Year = result.Year
+            Year = result.Year,
+            Type = result.BodyType?.ToDisplayName(),
+            IsExactMatch = result.IsExactMatch
         });
     }
 

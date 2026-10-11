@@ -356,6 +356,28 @@ public class IntakeApiClientTests
     }
 
     [Fact]
+    public async Task DecodeVinAsync_ShouldDeserializeTypeAndExactMatch()
+    {
+        var expected = new VinDecodeResponseDto
+        {
+            Vin = "4N11A2525M0000000",
+            Manufacturer = "NASH",
+            Model = "",
+            Year = 2021,
+            Type = "Travel Trailer",
+            IsExactMatch = false
+        };
+
+        var handler = new FakeHttpHandler(HttpStatusCode.OK, expected);
+        var sut = CreateClient(new HttpClient(handler) { BaseAddress = new Uri("https://test.local") });
+
+        var result = await sut.DecodeVinAsync("my-slug", "4N11A2525M0000000");
+
+        result!.Type.Should().Be("Travel Trailer");
+        result.IsExactMatch.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task DecodeVinAsync_WhenApiReturns404_ShouldReturnNull()
     {
         var handler = new FakeHttpHandler(HttpStatusCode.NotFound, new { });

@@ -19,7 +19,15 @@ public interface IVinDecoderService
 /// Result of a VIN decode operation from the NHTSA vPIC API.
 /// </summary>
 /// <param name="Vin">The original VIN that was decoded.</param>
-/// <param name="Manufacturer">Vehicle manufacturer name.</param>
-/// <param name="Model">Vehicle model name.</param>
-/// <param name="Year">Model year.</param>
-public sealed record VinDecoderResult(string Vin, string Manufacturer, string Model, int Year);
+/// <param name="Manufacturer">
+/// Vehicle brand (vPIC <c>Make</c>). This is the brand registered to the maker's WMI, which can be the
+/// wrong brand of a multi-brand maker even on a clean decode (an Arctic Fox decodes as NASH, issue #854).
+/// </param>
+/// <param name="Model">Vehicle model name, or the series or trim when vPIC has no model.</param>
+/// <param name="Year">Model year; 0 when vPIC returned none.</param>
+/// <param name="BodyType">The kind of RV inferred by <see cref="RvBodyTypeClassifier"/>, or <c>null</c> when vPIC's fields don't say.</param>
+/// <param name="IsExactMatch">
+/// <c>true</c> only when vPIC decoded the VIN cleanly (<c>ErrorCode</c> 0). A partial decode must not
+/// override a year read off the data plate (Spec A-10).
+/// </param>
+public sealed record VinDecoderResult(string Vin, string Manufacturer, string Model, int Year, RvBodyType? BodyType, bool IsExactMatch);

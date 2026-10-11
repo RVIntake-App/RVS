@@ -281,8 +281,7 @@ else
 
         if (_state.ReturnToStepAfterEdit.HasValue)
         {
-            _state.ReturnToStepAfterEdit = null;
-            await _state.GoToStepAsync(8);
+            await _state.ContinueFromEditAsync();
         }
         else
         {

@@ -369,7 +369,7 @@ public class IntakeControllerTests
     public async Task DecodeVin_WhenVinResolved_ShouldReturnOkWithVinDecodeResponse()
     {
         _vinDecoderServiceMock.Setup(s => s.DecodeVinAsync("1RGDE4428R1000001", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new VinDecoderResult("1RGDE4428R1000001", "Grand Design", "Momentum 395MS", 2024));
+            .ReturnsAsync(new VinDecoderResult("1RGDE4428R1000001", "Grand Design", "Momentum 395MS", 2024, RvBodyType.FifthWheel, true));
 
         var result = await _sut.DecodeVin("test-slug", "1RGDE4428R1000001");
 
@@ -379,6 +379,22 @@ public class IntakeControllerTests
         dto.Manufacturer.Should().Be("Grand Design");
         dto.Model.Should().Be("Momentum 395MS");
         dto.Year.Should().Be(2024);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DecodeVin_ShouldCarryTypeAndExactMatchToTheResponse(bool isExactMatch)
+    {
+        _vinDecoderServiceMock.Setup(s => s.DecodeVinAsync("4N11A2525M0000000", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new VinDecoderResult("4N11A2525M0000000", "NASH", "", 2021, RvBodyType.TravelTrailer, isExactMatch));
+
+        var result = await _sut.DecodeVin("test-slug", "4N11A2525M0000000");
+
+        var dto = result.Result.Should().BeOfType<OkObjectResult>().Subject
+            .Value.Should().BeOfType<VinDecodeResponseDto>().Subject;
+        dto.Type.Should().Be("Travel Trailer");
+        dto.IsExactMatch.Should().Be(isExactMatch);
     }
 
     [Fact]
