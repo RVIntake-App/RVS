@@ -11,7 +11,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | [Docs/RVS_Overview.md](Docs/RVS_Overview.md) | You need to remember what this is, or explain it to someone |
 | [Docs/RVS_Spec.md](Docs/RVS_Spec.md) | You're writing code. **If a requirement isn't here, it isn't in scope** |
 | [Docs/RVS_Plan.md](Docs/RVS_Plan.md) | You're deciding what to do next, or need an open question |
-| [Docs/RVS_Money.md](Docs/RVS_Money.md) | You need unit economics, cost structure, a revenue scenario, or the break-even |
 | [Docs/RVS_GoLive_Activities.md](Docs/RVS_GoLive_Activities.md) | You're about to take production live and need the agreed actions parked for that moment |
 | [Docs/RVS_Archive_Index.md](Docs/RVS_Archive_Index.md) | You need something from the prior document set, or why it was cut |
 
@@ -21,7 +20,8 @@ There is no target number of these. One authoritative home per fact; a document 
 
 - Infra source of truth: Bicep files in [Docs/ASOT/Infra/Bicep.IaC/](Docs/ASOT/Infra/Bicep.IaC/). Do not trust hand-drawn diagrams or older docs for Azure resource configuration.
 - Brand: [Docs/ASOT/Brand/](Docs/ASOT/Brand/) — the Denim & Rust theme brief (cited in code as **Spec THEME-1**) as handed over in #702, and the logo-kit asset inventory as re-issued September 24 2026 with the "Service Tag" mark (THEME-1 revised the same day: text-safe Rust, WCAG-audited semantic colors). They carry the rationale; the palette itself is authoritative in `RVS.UI.Shared/Theme/RvsBrand.cs`.
-- GTM material: [Docs/Marketing/](Docs/Marketing/) — Positioning, GoToMarket, Objections.
+- **Business documents are not in this repo.** Pricing, the customer contract (Pilot Agreement), money, positioning, go-to-market, objections, pitches and business planning live in the private **ADS** repo, cloned beside this one; `ADS/...` paths point there (e.g. `ADS/products/rv-intake/money/RVS_Money.md`). Keep it that way: a new document about running the business goes to ADS, not `Docs/`.
+- Product explainer: [Docs/Marketing/RVS_AIUseCases.md](Docs/Marketing/RVS_AIUseCases.md) — how the product uses AI.
 - Customer-facing how-tos: [Docs/Guides/](Docs/Guides/) — per-device guides for sending a channel-tagged intake link (Spec A-13). Written for a non-technical service advisor, not for engineers.
 - [Docs/ARCHIVE/](Docs/ARCHIVE/) and [Docs/Obsolete/](Docs/Obsolete/) are frozen snapshots. **Never cite them as current.**
 - Per-language instruction files also live in [.github/instructions/](.github/instructions/) (C#, ASP.NET, Blazor, Markdown, Testing).

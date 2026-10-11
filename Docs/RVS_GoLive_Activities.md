@@ -2,7 +2,7 @@
 
 Actions we have agreed should happen immediately before, or during, production go-live. Each one is a deliberate pre-launch setting that has to be undone, or a piece of work parked until there is real traffic to justify it.
 
-This is not a launch-readiness checklist. Gates, pilot sequencing and open questions live in [`RVS_Plan.md`](RVS_Plan.md); cost figures live in [`RVS_Money.md`](RVS_Money.md). An item belongs here only when it is a concrete action tied to the go-live moment.
+This is not a launch-readiness checklist. Pilot sequencing and technical open questions live in [`RVS_Plan.md`](RVS_Plan.md); pilot gates live in `ADS/products/rv-intake/planning/RVS_Business_Plan.md` and cost figures in `ADS/products/rv-intake/money/RVS_Money.md`, in the private ADS repo. An item belongs here only when it is a concrete action tied to the go-live moment.
 
 When an item is done, delete it and note the date in the commit message. Do not tick it off in place.
 

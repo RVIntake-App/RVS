@@ -1,6 +1,6 @@
 # RVS — Ownership Boundaries
 
-**Version:** 1.1 · October 11, 2026
+**Version:** 1.2 · October 11, 2026 (business sections moved to the ADS repo)
 **Status:** Action plan. The legal owner is decided (§4.1). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
 
 The goal: **RV Intake can be handed to a new owner as a single unit.** Every account, tenant, domain, trademark and contract it depends on should belong to RV Intake and nothing else, so that a sale is a handover, not a migration project.
@@ -9,8 +9,8 @@ This is cheapest to do now. Prod holds only test tenants, the G-5 wipe already p
 
 Sources:
 
-- A working session on October 8, 2026 about separating RV Intake from RigRoom, adapted here to what RV Intake actually runs.
-- The **ADS Entity & Brand Structure** plan (October 2026). It decides who owns RV Intake and under what name. Where the two disagree, the entity plan wins and this document follows it.
+- A working session on October 8, 2026 about separating RV Intake from Plover, adapted here to what RV Intake actually runs.
+- ADS's entity and brand structure, in the private ADS repo at `ADS/company/entities.md`. It decides who owns RV Intake and under what name. Where the two disagree, ADS wins and this document follows it.
 
 ---
 
@@ -84,7 +84,7 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Trademark** | None filed. | The name is the main transferable asset after the code. Unregistered, a buyer gets only common-law rights. | §4.3 |
 | **Domains** | `rvintake.com` (product) and `rvserviceflow.com` (now the RVS umbrella, stays with ADS). DNS zones are in Azure (good). Registrar account: to confirm. | The API origin `api.rvserviceflow.com`, the Auth0 audience and the claim namespace all sit on a domain RV Intake won't own. Registrant and registrar login for `rvintake.com` must belong to ADS for RV Intake. | §4.4, §4.8, §4.9 |
 | **Auth0** | One tenant shared with Benefetch, ManagersFriend, RVMTP and others (#610). | The tenant can't be handed over. Moving users after go-live means a password-hash export through Auth0 support, or forcing every user to reset. | §4.7 — **fold into G-5** |
-| **Azure tenant** | To confirm (§5). Probably a tenant that also holds RigRoom, or a personal directory. | Directory change at sale time (§1). | §4.6 |
+| **Azure tenant** | To confirm (§5). Probably a tenant that also holds Plover, or a personal directory. | Directory change at sale time (§1). | §4.6 |
 | **Azure billing** | To confirm (§5). | If it's a personal pay-as-you-go account or a Visual Studio credit subscription, it can't stay with the product. | §4.6 |
 | **GitHub** | Personal account `markarnoldutah/RVS`. OIDC subjects are `repo:markarnoldutah/RVS:environment:*`. | You can't hand over a personal account. Moving the repo changes the OIDC subject, which breaks deploys. | §4.5 — do with §4.6 |
 | **Ops and DMARC email** | `ops@` and `support@arnolddigitalsolutions.com` (`prod.bicepparam`). DMARC authorization records sit in the ADS zone at its registrar. | Alerts and reports keep going to an address the buyer can't reach. Part of the DNS lives outside the product. | §4.4 |
@@ -93,7 +93,7 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Auth0 identity mail** | Uses its own SendGrid key (Auth0 checklist §8). | Resolves itself if the SendGrid account is RV Intake's own. | §4.7 |
 | **Money** | To confirm: which bank account and card pay RV Intake's bills. | Mixed books make the asset sale's purchase-price allocation and due diligence harder. | §4.1 |
 
-Already in good shape: Bicep is the only source of truth for Azure, both DNS zones are in Azure, nothing in the repo references a RigRoom or Plover resource, and the Auth0 configuration is scripted (`Docs/ASOT/Infra/Auth0/`).
+Already in good shape: Bicep is the only source of truth for Azure, both DNS zones are in Azure, nothing in the repo references a Plover resource, and the Auth0 configuration is scripted (`Docs/ASOT/Infra/Auth0/`).
 
 ---
 
@@ -103,38 +103,25 @@ Order matters. The entity sets the names on everything else, and the alias mailb
 
 ### 4.1 The legal owner: ADS, trading as RV Intake *(decided; attorney + CPA to confirm)*
 
-**ADS owns RV Intake and is the only party that signs.** Customers see **"Arnold Digital Solutions LLC d/b/a RV Intake"**. ADS is being domesticated to Florida, and all legal filings come from there. RV Intake does not get its own LLC. The entity plan reserves a separate LLC for Plover, not for RV Intake.
+**ADS owns RV Intake and is the only party that signs.** Customers see **"Arnold Digital Solutions LLC d/b/a RV Intake"**. RV Intake does not get its own LLC, so a sale is an **asset sale**: every account is handed over and every contract and the trademark are assigned. The rest of this document is what makes that workable.
 
-That makes a sale an **asset sale**: every account is handed over and every contract and the trademark are assigned. The rest of this document is what makes that workable. On a sale, ADS withdraws its RV Intake fictitious name and the buyer files its own.
+The entity structure, the fictitious-name registration, the dedicated bank account and the order of the Florida filings are business matters and live in the private ADS repo: `ADS/company/entities.md` and `ADS/company/domicile.md` (Phase 3). What stays here is what the product and its accounts have to match:
 
-To do:
-
-1. **Register the fictitious name** "RV Intake" for ADS on Sunbiz once domestication completes: $50 plus one newspaper ad in the county of ADS's Florida principal place of business. It renews every 5 years.
-2. **Open a dedicated bank account** titled "ADS d/b/a RV Intake", and pay every RV Intake bill from it or from a card on it. A bookkeeping class per product is the fallback if the CPA prefers it.
-3. **Use the same name form everywhere:** ToS, privacy policy, texting terms, Pilot Agreement, invoices. In Stripe (build item 7), the legal name is ADS, and the public business name and statement descriptor are RV Intake.
-4. **Write ADS's Florida name and address** on the Azure billing account, the registrar and Stripe from this point on.
-5. **Keep `SiteIdentity.cs` and the toll-free filing in step.** `LegalEntityName` is "Arnold Digital Solutions" today, without "LLC" or the DBA (Spec A-15). If the legal pages change to "Arnold Digital Solutions LLC d/b/a RV Intake", update the Twilio Trust Hub profile in the same change, because carriers check that they match. Domestication may also change the address on that profile.
+1. **Write ADS's Florida name and address** on the Azure billing account, the registrar and Stripe once domestication completes. Until then they carry ADS's current details.
+2. **In Stripe** (build item 7), the legal name is ADS, and the public business name and statement descriptor are RV Intake.
+3. **Keep `SiteIdentity.cs` and the toll-free filing in step.** `LegalEntityName` is "Arnold Digital Solutions" today, without "LLC" or the DBA (Spec A-15). If the legal pages change to "Arnold Digital Solutions LLC d/b/a RV Intake", update the Twilio Trust Hub profile in the same change, because carriers check that they match. Domestication may also change the address on that profile.
 
 The toll-free verification is already filed under ADS (#680), so it doesn't need to be refiled.
 
-### 4.2 Fix the Pilot Agreement *(before the first signature)*
+### 4.2 Customer contract wording *(before the first signature)*
 
-`Docs/Legal/RVS_Pilot_Agreement.md`. Have the attorney confirm the exact wording.
+The Pilot Agreement and its wording (contracting party, assignment clause, the X-3 license running to successors and assigns) live in `ADS/products/rv-intake/legal/RVS_Pilot_Agreement.md`, pending the attorney's review.
 
-1. **Name the legal entity as the party:** "Arnold Digital Solutions LLC, doing business as RV Intake", not "RV ServiceFlow". RV ServiceFlow isn't a legal person, and under the entity plan RVS is a marketing name only.
-2. **Add an assignment clause:** ADS may assign this Agreement without consent to an affiliate or to a successor in a merger, acquisition or sale of all or substantially all of the RV Intake business or assets. Say "the RV Intake business" rather than "ADS's business": ADS owns other products, and a sale of RV Intake alone has to count.
-3. **Make the X-3 data license run to successors:** "…to Arnold Digital Solutions LLC and its successors and assigns, perpetual and irrevocable…". Grant the license to the entity, not to "RV Intake": a DBA can't hold rights. The Overview calls this license *the one thing that must not be dropped*. Without this wording it may not carry over to a buyer.
-
-The same three points apply to the ToS (`/terms`) wherever it grants rights.
+What stays here: the `/terms` and `/privacy` pages (`RVS.Blazor.Intake/Pages/Terms.razor` and `Privacy.razor`) must carry the same three points wherever they grant rights, in the wording the attorney confirms for the Pilot Agreement.
 
 ### 4.3 Trademark "RV Intake" *(attorney)*
 
-The entity plan sets the steps. In short:
-
-1. Run a knockout search on the USPTO trademark search system for "RV Intake" and close variants.
-2. **Discuss descriptiveness with the attorney first.** "RV Intake" describes RV service-intake software, so it risks a merely-descriptive refusal. The options are the Supplemental Register, a stylized or logo mark (the "Service Tag" mark), or a more distinctive name before launch. A name change is far cheaper now than after the domain work in §4.4 and §4.9.
-3. File in **ADS's name**, after the Florida domestication completes so the applicant details are final, in Class 42 (SaaS), and possibly Class 9.
-4. Use intent-to-use until there are paying customers, then use-based. Use ™ now and ® only after registration. Check current USPTO fees, which are charged per class.
+The steps, and the descriptiveness question to settle before filing, are in `ADS/products/rv-intake/README.md` ("Trademark"). The registration belongs to ADS and is assigned to a buyer at sale (§7). A name change, if the attorney recommends one, is far cheaper before the domain work in §4.4 and §4.9.
 
 ### 4.4 Set up role-alias mail on an `rvintake.com` subdomain
 
@@ -227,7 +214,7 @@ For each account, the login email becomes the alias, the legal and billing name 
 Two notes:
 
 - **Personal access:** you keep admin access to everything through your own user, invited as an admin or member. The alias is the account's identity, not your sign-in, so at sale time you remove yourself and nothing breaks.
-- **Paperwork:** keep a private inventory of every account, its login alias, its billing owner and its recovery method. Don't keep it in this public repo. That inventory is the handover document.
+- **Paperwork:** keep a private inventory of every account, its login alias, its billing owner and its recovery method, in the private ADS repo (under `ADS/products/rv-intake/`), not in this public repo. That inventory is the handover document.
 
 ### 4.9 Decide what to do with `rvserviceflow.com` *(open)*
 
@@ -255,7 +242,7 @@ Run these and keep the output. It decides which parts of §4.6 apply.
 az account show --query "{sub:name, tenant:tenantId, user:user.name}" -o table
 az ad signed-in-user show --query "{upn:userPrincipalName, type:userType}" -o table
 
-# Every subscription you can see, and its tenant. Does RigRoom share RVS's tenant?
+# Every subscription you can see, and its tenant. Does Plover share RVS's tenant?
 az account list --query "[].{name:name, tenant:tenantId}" -o table
 
 # Every tenant you belong to
@@ -278,7 +265,7 @@ How to read the results:
 
 - **UPN contains `#EXT#`:** you sign in with a personal Microsoft account. That's fine for you, but it can't be the product's only admin.
 - **quotaId starts with `MSDN` or contains `VisualStudio`:** a personal benefit subscription. It's tied to your subscriber license and can't go to a buyer. Move to a pay-as-you-go or MCA subscription under the billing account.
-- **The tenant also holds RigRoom or Plover subscriptions, or other products' identities:** §4.6 is required.
+- **The tenant also holds Plover subscriptions, or other products' identities:** §4.6 is required.
 - **The tenant holds only RV Intake already:** skip the directory change. Do step 1's admin accounts and step 2's billing move only.
 
 ---
@@ -295,6 +282,8 @@ How to read the results:
 ---
 
 ## 7. At sale time (for reference)
+
+ADS-wide sale rules are in `ADS/company/entities.md`. The account handover:
 
 ADS owns other products, so a sale of RV Intake is an asset sale. If the work above is done, the handover is:
 

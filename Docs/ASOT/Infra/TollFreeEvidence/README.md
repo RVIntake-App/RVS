@@ -114,7 +114,7 @@ Select **Verbal** and **Website** if the form allows several. If it allows one, 
 
 **Expected total messages per month:** prod **1,000**, staging **50**.
 
-Basis: `RVS_Money.md` assumes about 60 requests per location per month, and each request sends at most two texts. Pilot scale is a handful of locations, about 250–700 a month, so 1,000 leaves room without inviting scrutiny. Raise it if you expect more than about 8 locations live within six months.
+Basis: `ADS/products/rv-intake/money/RVS_Money.md` (private ADS repo) assumes about 60 requests per location per month, and each request sends at most two texts. Pilot scale is a handful of locations, about 250–700 a month, so 1,000 leaves room without inviting scrutiny. Raise it if you expect more than about 8 locations live within six months.
 
 ---
 

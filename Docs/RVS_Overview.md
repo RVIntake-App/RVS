@@ -50,7 +50,7 @@ Enterprise features, benchmarking, and the anonymized dataset are archived — t
 
 Two things stay in the build for this reason and this reason only:
 
-1. The anonymization license clause in the ToS and any design-partner agreement.
+1. The anonymization license clause in the ToS and any design-partner agreement (`ADS/products/rv-intake/legal/RVS_Pilot_Agreement.md` §4).
 2. The append-only ledger write on intake submission. It's already built, it's invisible to the user, and it means the record exists when it's needed.
 
 Everything downstream of the ledger — the anonymization pipeline, k-anonymity, benchmarking APIs, OEM licensing — is archived.
@@ -62,9 +62,10 @@ Everything downstream of the ledger — the anonymization pipeline, k-anonymity,
 | `RVS_Overview.md` | You need to remember what this is, or explain it to someone |
 | `RVS_Spec.md` | You're writing code |
 | `RVS_Plan.md` | You're deciding what to do next, or need to find an open question |
-| `RVS_Money.md` | You need unit economics, cost structure, a revenue scenario, or the break-even |
 | `RVS_GoLive_Activities.md` | You're about to take production live and need the agreed actions parked for that moment |
 | `RVS_Archive_Index.md` | You need something from the old document set, or want to know why something was cut |
+
+**Business documents live in the private ADS repo**, cloned beside this one (`ADS/...` paths): pricing, the customer contract, money, marketing, pitching and business planning, under `ADS/products/rv-intake/`. This repo keeps what's about building the product. A document that mixes both is split, and the halves point at each other.
 
 **There is no target number of documents.** The rule is placement, not count:
 
