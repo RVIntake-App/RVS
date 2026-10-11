@@ -25,6 +25,7 @@ public class PacketHtmlRendererTests
             Year = 2021,
             Make = "Winnebago",
             Model = "View",
+            Type = "Class A Motorhome",
             Vin = "1FDXE45S12HB00001",
         },
         Customer = new PacketCustomer
@@ -244,6 +245,24 @@ public class PacketHtmlRendererTests
         // IDS calls the VIN the "Serial#"; we label it "Serial# (VIN)".
         html.Should().Contain("Serial# (VIN):").And.Contain("1FDXE45S12HB00001");
         html.Should().Contain("2021").And.Contain("Winnebago").And.Contain("View");
+    }
+
+    [Fact]
+    public void Render_WhenTypePresent_ShouldShowItInTheUnitBlock()
+    {
+        var html = PacketHtmlRenderer.Render(FullPacket());
+
+        html.Should().Contain(">Type: <span>Class A Motorhome</span>");
+    }
+
+    [Fact]
+    public void Render_WhenTypeAbsent_ShouldOmitTheTypeRow()
+    {
+        var packet = FullPacket() with { Unit = FullPacket().Unit with { Type = null } };
+
+        var html = PacketHtmlRenderer.Render(packet);
+
+        html.Should().NotContain(">Type: <span>");
     }
 
     [Fact]

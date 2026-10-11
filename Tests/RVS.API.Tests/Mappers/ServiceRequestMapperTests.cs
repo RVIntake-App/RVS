@@ -2,6 +2,7 @@ using FluentAssertions;
 using RVS.API.Mappers;
 using RVS.Domain.DTOs;
 using RVS.Domain.Entities;
+using RVS.Domain.Integrations;
 
 namespace RVS.API.Tests.Mappers;
 
@@ -147,7 +148,8 @@ public class ServiceRequestMapperTests
                 AssetId = "1HGBH41JXMN109186",
                 Manufacturer = "Grand Design",
                 Model = "Momentum 395G",
-                Year = 2023
+                Year = 2023,
+                BodyType = RvBodyType.FifthWheel
             }
         };
 
@@ -157,6 +159,7 @@ public class ServiceRequestMapperTests
         dto.Asset.Manufacturer.Should().Be("Grand Design");
         dto.Asset.Model.Should().Be("Momentum 395G");
         dto.Asset.Year.Should().Be(2023);
+        dto.Asset.BodyType.Should().Be(RvBodyType.FifthWheel);
     }
 
     [Fact]
@@ -835,6 +838,7 @@ public class ServiceRequestMapperTests
         entity.AssetInfo.Manufacturer.Should().Be("Grand Design");
         entity.AssetInfo.Model.Should().Be("Momentum 395G");
         entity.AssetInfo.Year.Should().Be(2023);
+        entity.AssetInfo.BodyType.Should().Be(RvBodyType.FifthWheel);
     }
 
     [Fact]
@@ -1007,7 +1011,8 @@ public class ServiceRequestMapperTests
                 AssetId = "1HGBH41JXMN109186",
                 Manufacturer = "Grand Design",
                 Model = "Momentum 395G",
-                Year = 2023
+                Year = 2023,
+                BodyType = RvBodyType.FifthWheel
             },
             IssueCategory = "Slide System",
             IssueDescription = "Slide won't retract",

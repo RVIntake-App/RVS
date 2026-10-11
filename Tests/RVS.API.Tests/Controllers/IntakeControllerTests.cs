@@ -393,7 +393,7 @@ public class IntakeControllerTests
 
         var dto = result.Result.Should().BeOfType<OkObjectResult>().Subject
             .Value.Should().BeOfType<VinDecodeResponseDto>().Subject;
-        dto.Type.Should().Be("Travel Trailer");
+        dto.BodyType.Should().Be(RvBodyType.TravelTrailer);
         dto.IsExactMatch.Should().Be(isExactMatch);
     }
 

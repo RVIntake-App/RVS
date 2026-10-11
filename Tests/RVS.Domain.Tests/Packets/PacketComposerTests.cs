@@ -2,6 +2,7 @@ using System.Collections;
 using System.Reflection;
 using FluentAssertions;
 using RVS.Domain.Entities;
+using RVS.Domain.Integrations;
 using RVS.Domain.Packets;
 
 namespace RVS.Domain.Tests.Packets;
@@ -40,6 +41,7 @@ public class PacketComposerTests
             Manufacturer = "Winnebago",
             Model = "View",
             Year = 2021,
+            BodyType = RvBodyType.ClassA,
         },
         DiagnosticResponses =
         [
@@ -139,6 +141,7 @@ public class PacketComposerTests
         packet.Unit.Year.Should().Be(2021);
         packet.Unit.Make.Should().Be("Winnebago");
         packet.Unit.Model.Should().Be("View");
+        packet.Unit.Type.Should().Be("Class A Motorhome");
         packet.Unit.Vin.Should().Be("1FDXE45S12HB00001");
         packet.Unit.HasVin.Should().BeTrue();
 
@@ -259,6 +262,7 @@ public class PacketComposerTests
         packet.Unit.Year.Should().BeNull();
         packet.Unit.Make.Should().BeNull();
         packet.Unit.Model.Should().BeNull();
+        packet.Unit.Type.Should().BeNull();
         packet.Unit.Vin.Should().Be("1FDXE45S12HB00001");
     }
 

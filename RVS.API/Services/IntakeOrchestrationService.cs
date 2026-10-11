@@ -305,6 +305,7 @@ public sealed class IntakeOrchestrationService : IIntakeOrchestrationService
                     Manufacturer = request.Asset.Manufacturer?.Trim(),
                     Model = request.Asset.Model?.Trim(),
                     Year = request.Asset.Year,
+                    BodyType = request.Asset.BodyType,
                 },
                 DiagnosticResponses = issue.DiagnosticResponses?
                     .Select(d => new DiagnosticResponseEmbedded
@@ -357,6 +358,7 @@ public sealed class IntakeOrchestrationService : IIntakeOrchestrationService
                         Manufacturer = request.Asset.Manufacturer?.Trim(),
                         Model = request.Asset.Model?.Trim(),
                         Year = request.Asset.Year,
+                        BodyType = request.Asset.BodyType,
                         IssueCategory = serviceRequest.IssueCategory,
                         IssueDescription = serviceRequest.IssueDescription,
                         SubmittedAtUtc = serviceRequest.CreatedAtUtc,

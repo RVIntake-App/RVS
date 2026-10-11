@@ -1,3 +1,5 @@
+using RVS.Domain.Integrations;
+
 namespace RVS.Domain.DTOs;
 
 /// <summary>
@@ -19,10 +21,10 @@ public sealed record VinDecodeResponseDto
     public required int Year { get; init; }
 
     /// <summary>
-    /// The kind of RV as a display name (e.g. "Fifth Wheel", "Class C Motorhome"), when the decode
-    /// says which; see <c>RvBodyType</c>. Shown on Step 4, not stored on the request.
+    /// The kind of RV, when the decode says which; sent as the enum name. Pre-fills the Step 4
+    /// type dropdown, which the customer can change (issue #865).
     /// </summary>
-    public string? Type { get; init; }
+    public RvBodyType? BodyType { get; init; }
 
     /// <summary>
     /// Whether the decode was exact (vPIC <c>ErrorCode</c> 0). Only an exact decode overrides the year

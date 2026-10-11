@@ -1,4 +1,5 @@
 using RVS.Domain.Entities;
+using RVS.Domain.Integrations;
 using RVS.Domain.Validation;
 
 namespace RVS.Domain.Packets;
@@ -88,6 +89,7 @@ public static class PacketComposer
         Year = asset.Year,
         Make = NullIfBlank(asset.Manufacturer),
         Model = NullIfBlank(asset.Model),
+        Type = asset.BodyType?.ToDisplayName(),
         Vin = NullIfBlank(asset.AssetId),
     };
 

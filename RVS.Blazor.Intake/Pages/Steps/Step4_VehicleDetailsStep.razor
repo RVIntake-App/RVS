@@ -13,11 +13,6 @@
             <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Dense="true"
                       Icon="@Icons.Material.Filled.Pin">
                 @(State.HasVin ? "VIN" : "Serial number"): @State.Vin
-                @* Issue #854: inferred from the decode; shown for the customer's reference, not submitted. *@
-                @if (!string.IsNullOrWhiteSpace(State.BodyType))
-                {
-                    @: · @State.BodyType
-                }
             </MudAlert>
         }
 
@@ -93,6 +88,26 @@
                               Margin="Margin.Dense"
                               InputMode="InputMode.numeric"
                               Placeholder="e.g., 2023" />
+            </MudStack>
+        </MudPaper>
+
+        <MudPaper Elevation="1" Class="pa-4" Style="background: var(--mud-palette-background);">
+            <MudStack Spacing="1">
+                @* Issue #865: pre-filled from the VIN decode when it said; always optional, since the
+                   decode often can't tell and a truck camper has no VIN to decode. *@
+                <MudText Typo="Typo.body1" Style="font-weight: 700; color: var(--mud-palette-text-primary);">RV Type</MudText>
+                <MudText Typo="Typo.body1" Style="color: var(--mud-palette-text-secondary);">Optional</MudText>
+                <MudSelect T="RvBodyType?" @bind-Value="State.BodyType"
+                           ToStringFunc="@BodyTypeName"
+                           Clearable="true"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Placeholder="Choose a type">
+                    @foreach (var type in Enum.GetValues<RvBodyType>())
+                    {
+                        <MudSelectItem T="RvBodyType?" Value="@type">@type.ToDisplayName()</MudSelectItem>
+                    }
+                </MudSelect>
             </MudStack>
         </MudPaper>
 
@@ -198,6 +213,8 @@
         if (value > DateTime.UtcNow.Year + 2) return $"Year must not exceed {DateTime.UtcNow.Year + 2}";
         return null;
     }
+
+    private static string BodyTypeName(RvBodyType? type) => type?.ToDisplayName() ?? string.Empty;
 
     private void OnExtendedWarrantyChanged(string? value)
     {

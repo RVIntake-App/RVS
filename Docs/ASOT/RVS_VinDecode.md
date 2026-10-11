@@ -42,7 +42,7 @@ The plate wins wherever it has a value.
 | **Brand** | Plate value if there is one. The decode only fills a blank. vPIC `Make`, uppercase as returned. |
 | **Model** | Plate value if there is one. The decode only fills a blank, from `Model`, then `Series`, then `Trim`. |
 | **Year** | An exact decode overrides the plate. A partial decode only fills a blank. A blank decoded year is 0 and is ignored. |
-| **Type** | Comes from the decode only. See below. |
+| **Type** | The decode pre-fills the Step 4 dropdown (see below); the customer can change it or clear it, and with no decode they can still pick one. Submitted as the enum name (#865). |
 
 ### 4. Inferring the body type
 
@@ -97,7 +97,7 @@ The response DTO carries the type as a display name ("Fifth Wheel"). Logging on 
 | Requirement | State | Note |
 | --- | --- | --- |
 | A-3 VIN decode: make, model, year | **Built** | Plate wins for brand and model; decode fills blanks |
-| A-3 type | **Built, not stored** | Inferred and shown on Step 4; not on the request, packet or Manager (`#865`) |
+| A-3 type | **Built** | Inferred, offered as a Step 4 dropdown, stored on the request and ledger, shown on the packet, edited in the Manager (`#865`) |
 | A-10 decode vs. plate precedence | **Built** | Year follows exact vs. partial; brand and model never override the plate |
 | Brand correction for makers whose `Make` is a product line | **Not built** | Brinkley returns "MODEL G"; with a photo the plate brand wins, without one Step 4 asks the customer to check |
 | WMI-to-brand override table, other VIN providers | **Out of scope** | Listed out of scope in `#854` |

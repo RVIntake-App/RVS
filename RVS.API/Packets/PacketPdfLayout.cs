@@ -130,6 +130,7 @@ internal sealed record PacketPdfLayout
         AddRow(rows, "Year", unit.Year?.ToString(CultureInfo.InvariantCulture));
         AddRow(rows, "Manufacturer", unit.Make);
         AddRow(rows, "Model", unit.Model);
+        AddRow(rows, "Type", unit.Type);
         if (unit.HasVin)
         {
             rows.Add(new PacketPdfLayoutRow("Serial# (VIN)", unit.Vin!));

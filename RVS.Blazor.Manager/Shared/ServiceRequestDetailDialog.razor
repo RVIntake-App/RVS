@@ -1,3 +1,4 @@
+@using RVS.Domain.Integrations
 @inject ServiceRequestApiClient SrClient
 @inject LookupApiClient LookupClient
 @inject AttachmentApiClient AttachmentClient
@@ -1159,6 +1160,19 @@
                                                   Class="compact-field" />
                                 </MudStack>
                                 <MudStack Spacing="1">
+                                    <MudText Typo="Typo.body2" Style="@FieldLabelStyle">Type</MudText>
+                                    <MudSelect T="RvBodyType?" @bind-Value="_editAssetBodyType"
+                                               ToStringFunc="@BodyTypeName"
+                                               Clearable="true"
+                                               Variant="Variant.Outlined" Margin="Margin.Dense"
+                                               Class="compact-field">
+                                        @foreach (var type in Enum.GetValues<RvBodyType>())
+                                        {
+                                            <MudSelectItem T="RvBodyType?" Value="@type">@type.ToDisplayName()</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudStack>
+                                <MudStack Spacing="1">
                                     <MudText Typo="Typo.body2" Style="@FieldLabelStyle">VIN / Asset ID</MudText>
                                     <MudTextField T="string" @bind-Value="_editAssetId"
                                                   Variant="Variant.Outlined" Margin="Margin.Dense"
@@ -1176,6 +1190,10 @@
                                 @if (_sr.Asset.Year.HasValue || !string.IsNullOrEmpty(_sr.Asset.Manufacturer) || !string.IsNullOrEmpty(_sr.Asset.Model))
                                 {
                                     <MudText Typo="Typo.body2" Style="@ValueStyle">@AssetYearMakeModel(_sr)</MudText>
+                                }
+                                @if (_sr.Asset.BodyType is { } bodyType)
+                                {
+                                    <MudText Typo="Typo.body2" Style="@ValueStyle">@bodyType.ToDisplayName()</MudText>
                                 }
                                 @if (string.IsNullOrWhiteSpace(_sr.Asset.AssetId))
                                 {
@@ -1412,6 +1430,7 @@
     private int? _editAssetYear;
     private string? _editAssetManufacturer;
     private string? _editAssetModel;
+    private RvBodyType? _editAssetBodyType;
     private string? _editAssetId;
 
     private bool _editingTech;
@@ -2017,6 +2036,7 @@
         _editAssetYear         = _sr.Asset.Year;
         _editAssetManufacturer = _sr.Asset.Manufacturer;
         _editAssetModel        = _sr.Asset.Model;
+        _editAssetBodyType     = _sr.Asset.BodyType;
         _editAssetId           = _sr.Asset.AssetId;
         _assetError = null;
         _editingAsset = true;
@@ -2044,7 +2064,8 @@
                     AssetId      = _editAssetId ?? string.Empty,
                     Manufacturer = _editAssetManufacturer,
                     Model        = _editAssetModel,
-                    Year         = _editAssetYear
+                    Year         = _editAssetYear,
+                    BodyType     = _editAssetBodyType
                 }
             };
             _sr = await SrClient.UpdateAsync(_dealershipId, _sr.Id, request);
@@ -2467,6 +2488,8 @@
         var asset = AssetYearMakeModel(sr);
         return string.IsNullOrWhiteSpace(asset) ? name : $"{name}, {asset}";
     }
+
+    private static string BodyTypeName(RvBodyType? type) => type?.ToDisplayName() ?? string.Empty;
 
     private static string AssetYearMakeModel(ServiceRequestDetailResponseDto sr)
     {

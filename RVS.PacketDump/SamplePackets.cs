@@ -35,6 +35,7 @@ internal static class SamplePackets
                 Year = 2021,
                 Make = "Winnebago",
                 Model = "View 24D",
+                Type = "Class C Motorhome",
                 Vin = "1FDXE45S12HB00001",
             },
             Customer = new PacketCustomer

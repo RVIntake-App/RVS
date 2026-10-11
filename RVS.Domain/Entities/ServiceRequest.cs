@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using RVS.Domain.Integrations;
 
 namespace RVS.Domain.Entities;
 
@@ -681,6 +682,13 @@ public class AssetInfoEmbedded
 
     [JsonProperty("year")]
     public int? Year { get; set; }
+
+    /// <summary>
+    /// The kind of RV (Spec A-3, issue #865), stored as the enum name. Null when nobody said,
+    /// including every request made before the field existed.
+    /// </summary>
+    [JsonProperty("bodyType")]
+    public RvBodyType? BodyType { get; set; }
 }
 
 // ---------------------------------------------------------------------------

@@ -423,6 +423,20 @@ public class PacketPdfRendererTests
     }
 
     [Fact]
+    public void Build_WhenTypePresent_ShouldIncludeATypeRow()
+    {
+        var packet = FullPacket() with { Unit = FullPacket().Unit with { Type = "Fifth Wheel" } };
+
+        Section(packet, "unit").Rows.Should().ContainSingle(r => r.Label == "Type" && r.Value == "Fifth Wheel");
+    }
+
+    [Fact]
+    public void Build_WhenTypeAbsent_ShouldOmitTheTypeRow()
+    {
+        Section(FullPacket(), "unit").Rows.Should().NotContain(r => r.Label == "Type");
+    }
+
+    [Fact]
     public void Build_WhenVinAbsent_ShouldOmitTheSerialRow()
     {
         var packet = FullPacket() with
