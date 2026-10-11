@@ -7,44 +7,76 @@
 {
     <MudStack AlignItems="AlignItems.Center" Class="mt-8">
         <MudPaper Elevation="2" Class="pa-6 rounded-lg" Style="width: 100%; max-width: 480px;">
-            <MudStack Spacing="4">
-
-                <MudStack AlignItems="AlignItems.Center" Spacing="2">
-                    <MudIcon Icon="@Icons.Material.Filled.Search" Color="Color.Primary"
+            @if (_sent)
+            {
+                @* Worded the same whether or not the address is on file (issue #862). *@
+                <MudStack AlignItems="AlignItems.Center" Spacing="3">
+                    <MudIcon Icon="@Icons.Material.Filled.MarkEmailRead" Color="Color.Success"
                              Style="font-size: 3rem;" />
-                    <MudText Typo="Typo.h5" Align="Align.Center">
-                        Check Request Status
-                    </MudText>
+                    <MudText Typo="Typo.h5" Align="Align.Center">Check Your Email</MudText>
                     <MudText Typo="Typo.body1" Align="Align.Center"
                              Style="color: var(--mud-palette-text-secondary);">
-                        Enter your confirmation number to view the status of your service request.
+                        If we have service requests for <strong>@_sentTo</strong>, we've emailed you a link
+                        to check their status. It can take a few minutes to arrive, so check your spam folder too.
                     </MudText>
+                    <MudButton Variant="Variant.Text"
+                               Color="Color.Primary"
+                               OnClick="StartOver"
+                               Style="text-transform: none;">
+                        Use a different email address
+                    </MudButton>
                 </MudStack>
+            }
+            else
+            {
+                <MudStack Spacing="4">
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Search" Color="Color.Primary"
+                                 Style="font-size: 3rem;" />
+                        <MudText Typo="Typo.h5" Align="Align.Center">
+                            Check Request Status
+                        </MudText>
+                        <MudText Typo="Typo.body1" Align="Align.Center"
+                                 Style="color: var(--mud-palette-text-secondary);">
+                            Enter the email address you used on your service request, and we'll email you
+                            a link to check its status.
+                        </MudText>
+                    </MudStack>
 
-                <MudStack Spacing="1">
-                    <MudText Typo="Typo.body1" Style="font-weight: 700; color: var(--mud-palette-text-primary);">
-                        Confirmation Number
-                    </MudText>
-                    <MudTextField @bind-Value="_confirmationNumber"
-                                  Placeholder="tIp-R0:3iAbwM7iJA5aqjGFxC2n5g"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Immediate="true"
-                                  autocomplete="off"
-                                  OnKeyDown="HandleKeyDown" />
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.body1" Style="font-weight: 700; color: var(--mud-palette-text-primary);">
+                            Email
+                        </MudText>
+                        <MudTextField @bind-Value="_email"
+                                      Placeholder="you@example.com"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      InputType="InputType.Email"
+                                      Immediate="true"
+                                      autocomplete="email"
+                                      Error="@(_emailError is not null)"
+                                      ErrorText="@_emailError"
+                                      OnKeyDown="HandleKeyDown" />
+                    </MudStack>
+
+                    @if (_sendError is not null)
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true" Icon="@Icons.Material.Filled.Error">
+                            @_sendError
+                        </MudAlert>
+                    }
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Email"
+                               OnClick="RequestLinkAsync"
+                               Disabled="@(_sending || string.IsNullOrWhiteSpace(_email))"
+                               Style="text-transform: none;">
+                        @(_sending ? "Sending…" : "Email Me My Status Link")
+                    </MudButton>
                 </MudStack>
-
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           FullWidth="true"
-                           StartIcon="@Icons.Material.Filled.Search"
-                           OnClick="LookupStatus"
-                           Disabled="@string.IsNullOrWhiteSpace(_confirmationNumber)"
-                           Style="text-transform: none;">
-                    Look Up Status
-                </MudButton>
-
-            </MudStack>
+            }
         </MudPaper>
     </MudStack>
 }
@@ -52,21 +84,28 @@
 @code {
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private StatusLinkStore StatusLinks { get; set; } = default!;
+    [Inject] private HttpClient Http { get; set; } = default!;
+    [Inject] private ILogger<Status> Logger { get; set; } = default!;
 
     /// <summary>
-    /// Set by "Look up a different confirmation number" — shows the form even when this device
-    /// remembers a link.
+    /// Set by the status page's not-found and expired states — shows the form even when this
+    /// device remembers a link.
     /// </summary>
     [SupplyParameterFromQuery(Name = "manual")]
     public bool Manual { get; set; }
 
-    private string _confirmationNumber = string.Empty;
+    private string _email = string.Empty;
+    private string? _emailError;
+    private string? _sendError;
+    private string _sentTo = string.Empty;
+    private bool _sending;
+    private bool _sent;
     private bool _checkingSavedLink = true;
 
     protected override async Task OnInitializedAsync()
     {
         // Issue #716: a status link this device remembers, and that has not expired, opens
-        // directly. Anything else falls through to the confirmation-number form.
+        // directly. Anything else falls through to the email form (issue #862).
         if (!Manual && await StatusLinks.GetUnexpiredTokenAsync() is { } savedToken)
         {
             Navigation.NavigateTo($"/status/{Uri.EscapeDataString(savedToken)}", replace: true);
@@ -76,20 +115,68 @@
         _checkingSavedLink = false;
     }
 
-    private void LookupStatus()
+    private async Task RequestLinkAsync()
     {
-        var token = _confirmationNumber.Trim();
-        if (!string.IsNullOrWhiteSpace(token))
+        if (_sending)
         {
-            Navigation.NavigateTo($"/status/{Uri.EscapeDataString(token)}");
+            return;
+        }
+
+        var email = _email.Trim();
+        var validation = EmailValidator.Validate(email);
+        _emailError = validation.IsValid ? null : "Enter a valid email address.";
+        _sendError = null;
+        if (_emailError is not null)
+        {
+            return;
+        }
+
+        _sending = true;
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/status/link", new StatusLinkRequestDto { Email = email });
+
+            if (response.IsSuccessStatusCode)
+            {
+                _sentTo = email;
+                _sent = true;
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity)
+            {
+                _emailError = "Enter a valid email address.";
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                _sendError = "Too many tries. Please wait a few minutes and try again.";
+            }
+            else
+            {
+                _sendError = "We couldn't send your link just now. Please try again later.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to request a status link");
+            _sendError = "We couldn't send your link just now. Please try again later.";
+        }
+        finally
+        {
+            _sending = false;
         }
     }
 
-    private void HandleKeyDown(KeyboardEventArgs e)
+    private void StartOver()
+    {
+        _sent = false;
+        _email = string.Empty;
+        _sentTo = string.Empty;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            LookupStatus();
+            await RequestLinkAsync();
         }
     }
 }

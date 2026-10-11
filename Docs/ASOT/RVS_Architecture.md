@@ -30,7 +30,7 @@ Intake (anonymous) and Manager (bearer token) both call `RVS.API`. Middleware or
 1. Dev-only OpenAPI / Swagger UI
 2. HTTPS redirection (non-dev)
 3. CORS — named, environment-specific policy. Never `AllowAnyOrigin`
-4. Rate limiter — `IntakeEndpoint` (20/min), `StatusEndpoint` (10/min), `RedirectEndpoint` (120/min, `#599`), each partitioned per caller IP (`X-Forwarded-For`, socket fallback); `429` on reject
+4. Rate limiter — `IntakeEndpoint` (20/min), `StatusEndpoint` (10/min), `StatusLinkEndpoint` (5 per 10 min, `#862`), `RedirectEndpoint` (120/min, `#599`), each partitioned per caller IP (`X-Forwarded-For`, socket fallback); `429` on reject
 5. `ExceptionHandlingMiddleware` — `IMiddleware`, singleton
 6. Authentication → Authorization
 7. `CorrelationLoggingMiddleware` — after auth so claims are populated
@@ -60,6 +60,7 @@ Every Cosmos query is single-partition on `tenantId`. Cross-partition access is 
 | `POST api/intake/{slug}/ai/extract-vin` · `transcribe-issue` · `refine-issue-text` · `suggest-category` · `suggest-insights` | See AI surface below |
 | `POST api/intake/{slug}/diagnostic-questions` · `assess-capabilities` | — |
 | `GET api/status/{token}` | Customer status feed |
+| `POST api/status/link` | Emails the customer their status link (`#862`). Always `202` for a well-formed address, on file or not; `422` otherwise |
 | `GET /{locationSlug}` · `GET /go/{locationSlug}` | `go.rvintake.com` channel-tagging redirect (`Spec A-13`, `#599`). Optional `?src=`; absent means `print`. Optional `?inv=` (an A-14 invite token, #663) is passed through to the intake URL untouched and unlogged; a malformed one is dropped. 302 with `Cache-Control: no-store`, never 301 — a cached redirect is followed without touching the endpoint, and every later tap would go unlogged. Both templates carry a slug-shaped route constraint so nothing else at the API root is swallowed; `/{locationSlug}` is what the `go` host serves and `/go/{locationSlug}` is the same endpoint on the API's own hostname |
 
 **Authenticated** (per-permission policies, not roles)

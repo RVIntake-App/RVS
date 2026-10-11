@@ -51,6 +51,13 @@ public class GlobalCustomerAcct : EntityBase
     public DateTime? MagicLinkExpiresAtUtc { get; set; }
 
     /// <summary>
+    /// When the status link was last emailed on request from <c>/status</c> (issue #862).
+    /// Enforces the resend cooldown, so the anonymous form cannot flood one inbox.
+    /// </summary>
+    [JsonProperty("statusLinkEmailedAtUtc")]
+    public DateTime? StatusLinkEmailedAtUtc { get; set; }
+
+    /// <summary>
     /// Phase 2+: Auth0 user ID when customer creates an account.
     /// Null during MVP.
     /// </summary>

@@ -23,19 +23,19 @@ else if (_errorState == ErrorState.InvalidToken)
                 <MudStack AlignItems="AlignItems.Center" Spacing="2">
                     <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error"
                              Style="font-size: 3rem;" />
-                    <MudText Typo="Typo.h5" Align="Align.Center">Invalid Confirmation Number</MudText>
+                    <MudText Typo="Typo.h5" Align="Align.Center">Link Not Found</MudText>
                     <MudText Typo="Typo.body1" Align="Align.Center"
                              Style="color: var(--mud-palette-text-secondary);">
-                        We couldn't find a request matching that confirmation number. Please double-check the number in your email and try again.
+                        We couldn't find a status page for this link. Enter your email address and we'll send you a new one.
                     </MudText>
                 </MudStack>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            FullWidth="true"
-                           StartIcon="@Icons.Material.Filled.Search"
+                           StartIcon="@Icons.Material.Filled.Email"
                            Href="/status?manual=true"
                            Style="text-transform: none;">
-                    Try a Different Number
+                    Email Me a New Link
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -52,17 +52,16 @@ else if (_errorState == ErrorState.ExpiredToken)
                     <MudText Typo="Typo.h5" Align="Align.Center">Link Expired</MudText>
                     <MudText Typo="Typo.body1" Align="Align.Center"
                              Style="color: var(--mud-palette-text-secondary);">
-                        This status link has expired. Please request a new status link from the dealership
-                        or submit a new service request to receive an updated link.
+                        This status link has expired. Enter your email address and we'll send you a new one.
                     </MudText>
                 </MudStack>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            FullWidth="true"
-                           StartIcon="@Icons.Material.Filled.Home"
-                           Href="/"
+                           StartIcon="@Icons.Material.Filled.Email"
+                           Href="/status?manual=true"
                            Style="text-transform: none;">
-                    Return Home
+                    Email Me a New Link
                 </MudButton>
             </MudStack>
         </MudPaper>
@@ -227,23 +226,6 @@ else if (_statusResponse is not null)
                 }
             </MudGrid>
         }
-
-        <MudStack AlignItems="AlignItems.Center" Spacing="1">
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Home"
-                       Href="/"
-                       Style="text-transform: none;">
-                Return Home
-            </MudButton>
-            @* The lookup page opens the link this device remembers; this is the way past it. *@
-            <MudButton Variant="Variant.Text"
-                       Color="Color.Primary"
-                       Href="/status?manual=true"
-                       Style="text-transform: none;">
-                Look up a different confirmation number
-            </MudButton>
-        </MudStack>
     </MudStack>
 }
 

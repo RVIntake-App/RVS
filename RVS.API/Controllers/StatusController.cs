@@ -5,6 +5,7 @@ using RVS.API.Mappers;
 using RVS.Domain.DTOs;
 using RVS.Domain.Entities;
 using RVS.Domain.Interfaces;
+using RVS.Domain.Validation;
 
 namespace RVS.API.Controllers;
 
@@ -25,6 +26,7 @@ public class StatusController : ControllerBase
     private readonly ICustomerProfileService _customerProfileService;
     private readonly IServiceRequestService _serviceRequestService;
     private readonly ILocationService _locationService;
+    private readonly IStatusLinkService _statusLinkService;
 
     /// <summary>
     /// Initializes a new instance of <see cref="StatusController"/>.
@@ -33,12 +35,43 @@ public class StatusController : ControllerBase
         IGlobalCustomerAcctService globalCustomerAcctService,
         ICustomerProfileService customerProfileService,
         IServiceRequestService serviceRequestService,
-        ILocationService locationService)
+        ILocationService locationService,
+        IStatusLinkService statusLinkService)
     {
         _globalCustomerAcctService = globalCustomerAcctService;
         _customerProfileService = customerProfileService;
         _serviceRequestService = serviceRequestService;
         _locationService = locationService;
+        _statusLinkService = statusLinkService;
+    }
+
+    /// <summary>
+    /// Emails the customer the link to their status page (issue #862), for a customer who no
+    /// longer has it. Always <c>202 Accepted</c> for a well-formed address, whether or not it is
+    /// on file, so the endpoint cannot be used to learn who is a customer. Rate-limited more
+    /// tightly than the status read, since each call can send an email.
+    /// </summary>
+    /// <param name="request">The customer's email address.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <example>
+    /// POST /api/status/link  { "email": "jane@example.com" }
+    /// </example>
+    [HttpPost("link")]
+    [EnableRateLimiting("StatusLinkEndpoint")]
+    public async Task<IActionResult> RequestStatusLink([FromBody] StatusLinkRequestDto request, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var emailValidation = EmailValidator.Validate(request.Email);
+        if (!emailValidation.IsValid)
+        {
+            ModelState.AddModelError(nameof(request.Email), emailValidation.ErrorMessage!);
+            return UnprocessableEntity(ModelState);
+        }
+
+        await _statusLinkService.SendStatusLinkAsync(request.Email, ct);
+
+        return Accepted();
     }
 
     /// <summary>

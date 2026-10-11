@@ -105,7 +105,7 @@ The remaining trade-off is that an opted-in refresh token can be read by script 
 
 ## Anonymous token surfaces
 
-Two endpoints serve unauthenticated users, both rate-limited **per caller IP** (fixed window, partitioned on the `X-Forwarded-For` client address with the socket address as fallback — see `RVS.API/RateLimiting/ClientIpResolver.cs`): the intake endpoints (`IntakeEndpoint`, 20/min) and the customer status feed (`StatusEndpoint`, 10/min). Over-limit callers get `429`.
+Two endpoints serve unauthenticated users, both rate-limited **per caller IP** (fixed window, partitioned on the `X-Forwarded-For` client address with the socket address as fallback — see `RVS.API/RateLimiting/ClientIpResolver.cs`): the intake endpoints (`IntakeEndpoint`, 20/min) and the customer status feed (`StatusEndpoint`, 10/min). `POST api/status/link`, which emails a customer their status link, has a tighter window of its own (`StatusLinkEndpoint`, 5 per 10 min), plus a 5-minute per-account cooldown in `StatusLinkService` that a per-IP limit cannot give (#862). Over-limit callers get `429`.
 
 Spec X-5 requires that every anonymous token be ≥128 bits of entropy, **stored hashed**, TTL-bounded, rate-limited per IP, access-audited, and read-only. C-7 status writes go through the authenticated manager app, not an anonymous token (#498).
 

@@ -1,7 +1,7 @@
 @page "/"
 
-@* Landing page (issue #695) — a hero band carries the brand and the pitch; the two next
-   steps are equal-weight tiles below it rather than a stack of full-width buttons. *@
+@* Landing page (issue #695) — a hero band carries the brand and the pitch; the next step
+   is a tile below it rather than a full-width button. *@
 
 <PageTitle>RV Intake</PageTitle>
 
@@ -22,24 +22,10 @@
         </MudStack>
     </MudPaper>
 
+    @* The "New Service Request" tile (→ /intake) is hidden until there is a searchable directory
+       to pick a dealer from (issue #862). From the root there is no location to send it to; customers
+       reach intake through their dealer's link (Spec A-13). *@
     <MudGrid Justify="Justify.Center" Spacing="3" Style="width: 100%; max-width: 560px;">
-        <MudItem xs="12" sm="6">
-            <MudLink Href="/intake" Style="text-decoration: none; display: block; height: 100%;">
-                <MudPaper Elevation="2" Class="pa-6 rounded-lg"
-                          Style="height: 100%; border-top: 4px solid var(--mud-palette-primary);">
-                    <MudStack AlignItems="AlignItems.Center" Spacing="2">
-                        <MudIcon Icon="@Icons.Material.Filled.Add" Color="Color.Primary" Style="font-size: 2.5rem;" />
-                        <MudText Typo="Typo.h6" Align="Align.Center" Style="color: var(--mud-palette-text-primary);">
-                            New Service Request
-                        </MudText>
-                        <MudText Typo="Typo.body2" Align="Align.Center" Style="color: var(--mud-palette-text-secondary);">
-                            Tell us what's wrong — takes about 5 minutes.
-                        </MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudLink>
-        </MudItem>
-
         <MudItem xs="12" sm="6">
             <MudLink Href="/status" Style="text-decoration: none; display: block; height: 100%;">
                 <MudPaper Elevation="2" Class="pa-6 rounded-lg"

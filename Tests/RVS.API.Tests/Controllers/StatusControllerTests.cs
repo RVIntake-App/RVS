@@ -14,6 +14,7 @@ public class StatusControllerTests
     private readonly Mock<ICustomerProfileService> _profileServiceMock = new();
     private readonly Mock<IServiceRequestService> _srServiceMock = new();
     private readonly Mock<ILocationService> _locationServiceMock = new();
+    private readonly Mock<IStatusLinkService> _statusLinkServiceMock = new();
     private readonly StatusController _sut;
 
     public StatusControllerTests()
@@ -22,7 +23,39 @@ public class StatusControllerTests
             _globalAcctServiceMock.Object,
             _profileServiceMock.Object,
             _srServiceMock.Object,
-            _locationServiceMock.Object);
+            _locationServiceMock.Object,
+            _statusLinkServiceMock.Object);
+    }
+
+    // ── RequestStatusLink (issue #862) ───────────────────────────────────────
+
+    [Fact]
+    public async Task RequestStatusLink_WithAValidEmail_ShouldSendTheLinkAndReturnAccepted()
+    {
+        var result = await _sut.RequestStatusLink(new StatusLinkRequestDto { Email = "jane@example.com" }, CancellationToken.None);
+
+        result.Should().BeOfType<AcceptedResult>();
+        _statusLinkServiceMock.Verify(s => s.SendStatusLinkAsync("jane@example.com", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not-an-email")]
+    [InlineData("jane@example")]
+    public async Task RequestStatusLink_WithAMalformedEmail_ShouldReturn422AndSendNothing(string email)
+    {
+        var result = await _sut.RequestStatusLink(new StatusLinkRequestDto { Email = email }, CancellationToken.None);
+
+        result.Should().BeOfType<UnprocessableEntityObjectResult>();
+        _statusLinkServiceMock.Verify(s => s.SendStatusLinkAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RequestStatusLink_WhenRequestIsNull_ShouldThrowArgumentNullException()
+    {
+        var act = () => _sut.RequestStatusLink(null!, CancellationToken.None);
+
+        await act.Should().ThrowAsync<ArgumentNullException>();
     }
 
     [Fact]
