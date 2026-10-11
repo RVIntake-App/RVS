@@ -2,7 +2,7 @@
 @inject ServiceRequestApiClient SrClient
 @inject LookupApiClient LookupClient
 @inject AttachmentApiClient AttachmentClient
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 @inject IJSRuntime JS
 @inject ThemeService ThemeService
 @inject AuthenticationStateProvider AuthProvider
@@ -1675,7 +1675,7 @@
         catch (Exception ex)
         {
             _issueCategories = [];
-            Snackbar.Add($"Failed to load issue categories: {ex.Message}", Severity.Warning);
+            Toasts.Warning($"Failed to load issue categories: {ex.Message}");
         }
     }
 
@@ -1782,7 +1782,7 @@
         {
             await SrClient.RegeneratePacketAsync(_dealershipId, _sr.Id);
             _sr = _sr with { PacketGeneration = PacketStatusDisplay.AsPendingRegeneration(_sr.PacketGeneration) };
-            Snackbar.Add("Packet regeneration queued.", Severity.Success);
+            Toasts.Success("Packet regeneration queued.");
         }
         catch (Exception ex)
         {
@@ -2223,7 +2223,7 @@
             await _createFormRef.ValidateAsync();
             if (!_createFormRef.IsValid)
             {
-                Snackbar.Add("Fix the highlighted fields and try again.", Severity.Warning);
+                Toasts.Warning("Fix the highlighted fields and try again.");
                 return;
             }
         }
@@ -2237,7 +2237,7 @@
 
             if (_dealershipId is null)
             {
-                Snackbar.Add("No dealership found.", Severity.Error);
+                Toasts.Error("No dealership found.");
                 return;
             }
 
@@ -2263,13 +2263,13 @@
             };
 
             await SrClient.CreateAsync(_dealershipId, request);
-            Snackbar.Add("Service request created.", Severity.Success);
+            Toasts.Success("Service request created.");
             await OnChanged.InvokeAsync();
             await CloseDialog();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to create service request: {ex.Message}", Severity.Error);
+            Toasts.Error($"Failed to create service request: {ex.Message}");
         }
         finally
         {

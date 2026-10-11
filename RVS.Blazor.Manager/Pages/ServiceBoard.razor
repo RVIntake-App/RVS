@@ -5,7 +5,7 @@
 @inject RVS.UI.Shared.Services.ServiceRequestApiClient SrClient
 @inject RVS.UI.Shared.Services.LookupApiClient LookupClient
 @inject NavigationManager Navigation
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 @inject RVS.Blazor.Manager.State.ManagerAppState AppState
 @inject ThemeService ThemeService
 @using RVS.Domain.Validation
@@ -487,7 +487,7 @@
             }
 
             var columnTitle = _columns.FirstOrDefault(c => c.Status == newZone)?.Title ?? newZone;
-            Snackbar.Add(zoneChanged ? $"Moved to {columnTitle}." : "Card reordered.", Severity.Success);
+            Toasts.Success(zoneChanged ? $"Moved to {columnTitle}." : "Card reordered.");
         }
         catch (Exception ex)
         {
@@ -498,7 +498,7 @@
             var message = ex.Message.Contains("status transition", StringComparison.OrdinalIgnoreCase)
                 ? ex.Message
                 : "Unable to update card position.";
-            Snackbar.Add(message, Severity.Error);
+            Toasts.Error(message);
         }
     }
 

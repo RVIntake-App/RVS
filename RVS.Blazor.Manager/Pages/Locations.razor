@@ -1,7 +1,7 @@
 @page "/locations"
 @inject LookupApiClient LookupClient
 @inject IJSRuntime JS
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 @inject ThemeService ThemeService
 @implements IDisposable
 @using RVS.UI.Shared.Validation
@@ -803,7 +803,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to load location details: {ex.Message}", Severity.Error);
+            Toasts.Error($"Failed to load location details: {ex.Message}");
         }
     }
 
@@ -859,7 +859,7 @@
         // common case for a new location is "enter one recipient, click Save" (Spec B-6).
         if (!string.IsNullOrWhiteSpace(_newRecipient) && !AddRecipient())
         {
-            Snackbar.Add("Fix the recipient address and try again.", Severity.Warning);
+            Toasts.Warning("Fix the recipient address and try again.");
             return;
         }
 
@@ -874,7 +874,7 @@
 
         if ((_form2 is not null && !_form2.IsValid) || !packetResult.IsValid)
         {
-            Snackbar.Add("Fix the highlighted fields and try again.", Severity.Warning);
+            Toasts.Warning("Fix the highlighted fields and try again.");
             return;
         }
 
@@ -915,12 +915,12 @@
             if (_editingLocationId is not null)
             {
                 await LookupClient.UpdateLocationAsync(_editingLocationId, request);
-                Snackbar.Add("Location updated.", Severity.Success);
+                Toasts.Success("Location updated.");
             }
             else
             {
                 await LookupClient.CreateLocationAsync(request);
-                Snackbar.Add("Location created.", Severity.Success);
+                Toasts.Success("Location created.");
             }
 
             _dialogOpen = false;
@@ -928,7 +928,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to save location: {ex.Message}", Severity.Error);
+            Toasts.Error($"Failed to save location: {ex.Message}");
         }
         finally
         {
@@ -970,11 +970,11 @@
             var bytes = await LookupClient.GetLocationQrCodeAsync(locationId);
             var base64 = Convert.ToBase64String(bytes);
             await JS.InvokeVoidAsync("rvs_downloadBase64", $"qr-{Uri.EscapeDataString(slug)}.png", base64, "image/png");
-            Snackbar.Add("QR code downloaded.", Severity.Success);
+            Toasts.Success("QR code downloaded.");
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to download QR code: {ex.Message}", Severity.Error);
+            Toasts.Error($"Failed to download QR code: {ex.Message}");
         }
     }
 

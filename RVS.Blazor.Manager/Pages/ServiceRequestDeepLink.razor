@@ -4,7 +4,7 @@
 @inject AttachmentApiClient AttachmentClient
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
-@inject ISnackbar Snackbar
+@inject ToastService Toasts
 
 @*
     The request page the packet email links to (Spec C-7, issues #498 and #743).
@@ -335,7 +335,7 @@
             var request = ServiceRequestMobileView.BuildUpdateRequest(_sr, summary) with { Status = option.Status };
 
             SetRequest(await SrClient.UpdateAsync(_dealershipId, _sr.Id, request));
-            Snackbar.Add($"Marked {option.Label}.", Severity.Success);
+            Toasts.Success($"Marked {option.Label}.");
         }
         catch (AccessTokenNotAvailableException ex)
         {
@@ -343,7 +343,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Unable to update status. {ex.Message}", Severity.Error);
+            Toasts.Error($"Unable to update status. {ex.Message}");
         }
         finally
         {
@@ -377,7 +377,7 @@
             }
 
             SetRequest(sr);
-            Snackbar.Add(saved is null ? "Note cleared." : "Note saved.", Severity.Success);
+            Toasts.Success(saved is null ? "Note cleared." : "Note saved.");
         }
         catch (AccessTokenNotAvailableException ex)
         {
@@ -411,7 +411,7 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Unable to open the packet. {ex.Message}", Severity.Error);
+            Toasts.Error($"Unable to open the packet. {ex.Message}");
         }
         finally
         {

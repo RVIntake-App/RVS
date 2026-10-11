@@ -16,8 +16,10 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// MudBlazor component library
-builder.Services.AddMudServices();
+// MudBlazor component library. Every transient notice is a bottom-right toast raised through
+// ToastService (issue #867); ToastDefaults sets the shared look.
+builder.Services.AddMudServices(config => ToastDefaults.Configure(config.SnackbarConfiguration));
+builder.Services.AddScoped<ToastService>();
 
 // Centralized app state (singleton in WASM — single user)
 builder.Services.AddSingleton<ManagerAppState>();
@@ -51,9 +53,6 @@ builder.Services.AddScoped<AuthorizationMessageHandler>();
 // Provide a default HttpClient via IHttpClientFactory for DI consumers
 builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IHttpClientFactory>().CreateClient("RVS.API"));
-
-// MudBlazor component library
-builder.Services.AddMudServices();
 
 // Register typed API clients using the named HttpClient
 builder.Services.AddScoped<RVS.UI.Shared.Services.ServiceRequestApiClient>(sp =>
