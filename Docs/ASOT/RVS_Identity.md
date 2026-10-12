@@ -66,7 +66,8 @@ Authorization is **per-permission, never per-role**. Policies are declared in `R
 | `CanCreateLocations` | `locations:create` | |
 | `CanUpdateLocations` | `locations:update` | |
 | `CanReadAnalytics` | `analytics:read` | **Archived** — analytics is out of scope |
-| `CanManageTenantConfig` | `tenants:config:read` / `create` / `update` | Any one of the three satisfies it |
+| `CanManageTenantConfig` | `tenants:config:read` / `create` / `update` | Any one of the three satisfies it, so a holder of `read` alone could write `api/tenants/config`. Tightening that is tracked separately |
+| `CanUpdateTenantConfig` | `tenants:config:update` | That one only. Guards `PUT api/tenants/statuses` (Spec C-8, #855); `ClaimsService.CanUpdateTenantConfig()` mirrors it for the `canEdit` flag the board reads. Held by `dealer:owner`, `dealer:corporate-admin` and `platform:admin`; not by `dealer:manager` |
 | `CanReadLookups` | `lookups:read` | |
 | `CanSendIntakeInvites` | `intake-invites:send` | Advisor intake invites (Spec A-14, #663). Held by every role that can create service requests — `dealer:advisor`, `dealer:manager`, `dealer:owner`, `dealer:corporate-admin`, `dealer:regional-manager`, `platform:admin` (#666). The manager app cannot read `permissions` (Auth0 RBAC writes them to the access token only, never the id token), so the Send intake link button is always shown and a 403 is explained in the dialog |
 | `PlatformAdmin` | `platform:tenants:manage` | **Plus** the caller's `sub` on `Admin:AllowedUserIds` (`PlatformAdminAllowlistHandler`). Guards `api/admin/tenants` (#563) |

@@ -47,7 +47,8 @@ public class ServiceRequestSearchTests
     [Fact]
     public void OpenStatusFilter_ShouldNotCollideWithAStoredStatus()
     {
-        var storedStatuses = StatusTransitions.GetAllowedTargets("New").Append("New");
+        // Tenant-added status ids are server-generated ("st_…"), so only the defaults can collide.
+        var storedStatuses = StatusVocabulary.Resolve(null).Select(s => s.Id);
 
         storedStatuses.Should().NotContain(ServiceRequestSearch.OpenStatusFilter);
     }

@@ -45,33 +45,6 @@ public class ServiceRequestMobileViewTests
         JobType = "OnSite",
     };
 
-    // ---- Statuses ---------------------------------------------------------------
-
-    [Fact]
-    public void Statuses_ShouldBeTheC3SetInPathOrder()
-    {
-        ServiceRequestMobileView.Statuses.Select(s => s.Status).Should().Equal(
-            "New", "InProgress", "WaitingOnParts", "WaitingOnCustomer", "Completed", "Cancelled");
-    }
-
-    [Theory]
-    [InlineData("New", "New")]
-    [InlineData("InProgress", "In Progress")]
-    [InlineData("WaitingOnParts", "Waiting on Parts")]
-    [InlineData("WaitingOnCustomer", "Waiting on Customer")]
-    [InlineData("Completed", "Completed")]
-    [InlineData("Cancelled", "Cancelled")]
-    public void GetStatusLabel_ForKnownStatus_ShouldReturnSpecLabel(string status, string expected)
-    {
-        ServiceRequestMobileView.GetStatusLabel(status).Should().Be(expected);
-    }
-
-    [Fact]
-    public void GetStatusLabel_ForUnknownStatus_ShouldEchoIt()
-    {
-        ServiceRequestMobileView.GetStatusLabel("Mystery").Should().Be("Mystery");
-    }
-
     // ---- BuildUpdateRequest -----------------------------------------------------
 
     [Fact]

@@ -20,6 +20,25 @@ public sealed class ClaimsServiceTests
     }
 
     [Fact]
+    public void CanUpdateTenantConfig_WhenUserHoldsTheUpdatePermission_ShouldReturnTrue()
+    {
+        var sut = CreateService(new Claim("permissions", "service-requests:read"), new Claim("permissions", "tenants:config:update"));
+
+        sut.CanUpdateTenantConfig().Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("tenants:config:read")]
+    [InlineData("tenants:config:create")]
+    [InlineData("service-requests:read")]
+    public void CanUpdateTenantConfig_WhenUserLacksTheUpdatePermission_ShouldReturnFalse(string permission)
+    {
+        var sut = CreateService(new Claim("permissions", permission));
+
+        sut.CanUpdateTenantConfig().Should().BeFalse();
+    }
+
+    [Fact]
     public void GetTenantIdOrThrow_WhenClaimPresent_ShouldReturnTenantId()
     {
         var sut = CreateService(new Claim(ClaimsService.TenantIdClaimType, "tenant-123"));

@@ -5,6 +5,37 @@ namespace RVS.UI.Shared.Tests.Components;
 
 public class StatusBadgeFormattingTests
 {
+    // ── Palette colors (Spec C-8, issue #855) ────────────────────────────────
+
+    [Theory]
+    [InlineData("blue", "rvs-status-in-progress")]
+    [InlineData("amber", "rvs-status-waiting-on-parts")]
+    [InlineData("teal", "rvs-status-waiting-on-customer")]
+    [InlineData("green", "rvs-status-new")]
+    [InlineData("purple", "rvs-status-completed")]
+    [InlineData("gray", "rvs-status-cancelled")]
+    public void GetCssClassForColor_PaletteColor_ReturnsTheMatchingAuditedTokenClass(string color, string expected)
+    {
+        StatusBadgeFormatting.GetCssClassForColor(color).Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("magenta")]
+    public void GetCssClassForColor_UnknownColor_ReturnsDefaultClass(string? color)
+    {
+        StatusBadgeFormatting.GetCssClassForColor(color).Should().Be("rvs-status-default");
+    }
+
+    [Fact]
+    public void GetCssClassForColor_CoversEveryPaletteColor()
+    {
+        RVS.Domain.Validation.StatusVocabulary.Colors
+            .Select(StatusBadgeFormatting.GetCssClassForColor)
+            .Should().NotContain("rvs-status-default");
+    }
+
     [Theory]
     [InlineData("New")]
     [InlineData(" new ")]

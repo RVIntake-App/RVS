@@ -14,6 +14,15 @@ public sealed class ClaimsService
     public const string TenantIdClaimType = "https://rvserviceflow.com/tenantId";
     public const string LocationIdsClaimType = "https://rvserviceflow.com/locationIds";
 
+    /// <summary>The claim type Auth0 RBAC writes each granted permission to.</summary>
+    public const string PermissionsClaimType = "permissions";
+
+    /// <summary>
+    /// The one permission the <c>CanUpdateTenantConfig</c> policy accepts. Shared with
+    /// <c>Program.cs</c> so the policy and <see cref="CanUpdateTenantConfig"/> cannot drift.
+    /// </summary>
+    public const string TenantConfigUpdatePermission = "tenants:config:update";
+
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     public ClaimsService(IHttpContextAccessor httpContextAccessor)
@@ -70,6 +79,14 @@ public sealed class ClaimsService
     /// <returns><c>true</c> if the user has access; otherwise, <c>false</c>.</returns>
     public bool HasAccessToLocation(string locationId) =>
         GetLocationIdsOrThrow().Contains(locationId, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Whether the current user satisfies the <c>CanUpdateTenantConfig</c> policy. Lets a read
+    /// endpoint tell the manager app which controls to show, since the app cannot read
+    /// <c>permissions</c> itself (they are on the access token only).
+    /// </summary>
+    public bool CanUpdateTenantConfig() =>
+        User.HasClaim(PermissionsClaimType, TenantConfigUpdatePermission);
 
     /// <summary>
     /// Retrieves the user ID from the current user's claims.

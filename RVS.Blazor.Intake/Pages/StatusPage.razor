@@ -153,15 +153,15 @@ else if (_statusResponse is not null)
                                         <MudChip T="string"
                                                  Label="true"
                                                  Variant="Variant.Filled"
-                                                 Color="@CustomerStatusFormatting.GetStatusColor(sr.Status)"
+                                                 Color="@CustomerStatusFormatting.GetStatusColor(sr.Status, sr.StatusLabel)"
                                                  Class="ma-0"
                                                  Style="font-weight: 600;">
-                                            @CustomerStatusFormatting.GetStatusLabel(sr.Status)
+                                            @CustomerStatusFormatting.GetStatusLabel(sr.Status, sr.StatusLabel)
                                         </MudChip>
                                     </MudStack>
 
                                     <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">
-                                        @CustomerStatusFormatting.DescribeStatus(sr.Status)
+                                        @CustomerStatusFormatting.DescribeStatus(sr.Status, sr.StatusLabel)
                                     </MudText>
 
                                     @if (!string.IsNullOrWhiteSpace(sr.StatusNote))

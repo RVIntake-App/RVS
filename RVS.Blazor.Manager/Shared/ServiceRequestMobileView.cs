@@ -6,26 +6,12 @@ namespace RVS.Blazor.Manager.Shared;
 
 /// <summary>
 /// Pure logic behind the mobile request page the packet email links to (<c>Spec C-7</c>,
-/// issue #743): the C-3 status set with its labels, the update request a status change sends,
-/// the call / text / email links for the customer, and the header lines.
+/// issue #743): the update request a status change sends, the call / text / email links for
+/// the customer, and the header lines. The statuses themselves are the tenant's
+/// (<see cref="StatusVocabularyView"/>, <c>Spec C-8</c>).
 /// </summary>
 public static class ServiceRequestMobileView
 {
-    /// <summary>The C-3 status set, in path order, with the Spec's display labels.</summary>
-    public static IReadOnlyList<StatusOption> Statuses { get; } =
-    [
-        new("New", "New"),
-        new("InProgress", "In Progress"),
-        new("WaitingOnParts", "Waiting on Parts"),
-        new("WaitingOnCustomer", "Waiting on Customer"),
-        new("Completed", "Completed"),
-        new("Cancelled", "Cancelled"),
-    ];
-
-    /// <summary>Display label for a stored status; an unknown value is echoed back.</summary>
-    public static string GetStatusLabel(string status) =>
-        Statuses.FirstOrDefault(s => string.Equals(s.Status, status, StringComparison.OrdinalIgnoreCase))?.Label ?? status;
-
     /// <summary>
     /// The update request that leaves the service request as loaded, except for the activity
     /// log. <c>ApplyUpdate</c> is a full overwrite — every field absent from the request is
@@ -137,9 +123,6 @@ public static class ServiceRequestMobileView
         return sb.Length == 0 || sb.ToString() == "+" ? null : sb.ToString();
     }
 }
-
-/// <summary>One C-3 status: the stored value and its display label.</summary>
-public sealed record StatusOption(string Status, string Label);
 
 /// <summary>One way to reach the customer from the mobile page.</summary>
 /// <param name="Method">The <c>PreferredContactMethod</c> value: <c>Phone</c>, <c>Text</c> or <c>Email</c>.</param>

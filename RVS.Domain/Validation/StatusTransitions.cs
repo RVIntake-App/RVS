@@ -1,44 +1,27 @@
 namespace RVS.Domain.Validation;
 
 /// <summary>
-/// Enforces valid status transitions for ServiceRequest entities.
-/// Invalid transitions should return 409 Conflict from the API layer.
+/// Enforces valid status transitions for ServiceRequest entities against the tenant's
+/// vocabulary (<c>Spec C-8</c>). Transitions are unrestricted: any status may move to any other
+/// status in the vocabulary, self-transitions excepted. The source status is not checked, so a
+/// request left in a status the tenant has since deleted can always be moved on.
 /// </summary>
 public static class StatusTransitions
 {
-    private static readonly Dictionary<string, HashSet<string>> _allowed = new()
-    {
-        ["New"] = ["InProgress", "Completed", "Cancelled", "WaitingOnParts", "WaitingOnCustomer"],
-        ["InProgress"] = ["New", "Completed", "Cancelled", "WaitingOnParts", "WaitingOnCustomer"],
-        ["WaitingOnParts"] = ["New", "InProgress", "Completed", "Cancelled", "WaitingOnCustomer"],
-        ["WaitingOnCustomer"] = ["New", "InProgress", "Completed", "Cancelled", "WaitingOnParts"],
-        ["Completed"] = ["New", "InProgress", "Cancelled", "WaitingOnParts", "WaitingOnCustomer"],
-        ["Cancelled"] = ["New", "InProgress", "Completed", "WaitingOnParts", "WaitingOnCustomer"],
-    };
-
-    /// <summary>
-    /// Returns the set of statuses that can be reached from <paramref name="currentStatus"/>.
-    /// </summary>
-    /// <param name="currentStatus">The current status value.</param>
-    /// <returns>A read-only collection of valid target statuses, or empty if none are allowed.</returns>
-    public static IReadOnlyCollection<string> GetAllowedTargets(string currentStatus)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(currentStatus);
-
-        return _allowed.TryGetValue(currentStatus, out var targets) ? targets : [];
-    }
-
     /// <summary>
     /// Returns true if the transition from <paramref name="from"/> to <paramref name="to"/> is valid.
     /// </summary>
     /// <param name="from">The current status value.</param>
     /// <param name="to">The desired target status value.</param>
+    /// <param name="statuses">The tenant's resolved vocabulary (<see cref="StatusVocabulary.Resolve"/>).</param>
     /// <returns><c>true</c> if the transition is allowed; otherwise <c>false</c>.</returns>
-    public static bool IsValid(string from, string to)
+    public static bool IsValid(string from, string to, IReadOnlyList<StatusDefinition> statuses)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(from);
         ArgumentException.ThrowIfNullOrWhiteSpace(to);
+        ArgumentNullException.ThrowIfNull(statuses);
 
-        return _allowed.TryGetValue(from, out var targets) && targets.Contains(to);
+        return !string.Equals(from, to, StringComparison.Ordinal)
+            && statuses.Any(s => string.Equals(s.Id, to, StringComparison.Ordinal));
     }
 }

@@ -1,10 +1,18 @@
 using FluentAssertions;
+using RVS.Domain.Entities;
 using RVS.Domain.Validation;
 
 namespace RVS.Domain.Tests.Validation;
 
 public class StatusTransitionsTests
 {
+    private static readonly IReadOnlyList<StatusDefinition> Defaults = StatusVocabulary.Resolve(null);
+
+    private static readonly IReadOnlyList<StatusDefinition> Custom = StatusVocabulary.Resolve(
+    [
+        new TenantStatusEmbedded { Id = "st_diag", Name = "Diagnosing", Color = "blue" },
+    ]);
+
     [Theory]
     [InlineData("New", "InProgress")]
     [InlineData("New", "Completed")]
@@ -12,51 +20,59 @@ public class StatusTransitionsTests
     [InlineData("New", "WaitingOnParts")]
     [InlineData("New", "WaitingOnCustomer")]
     [InlineData("InProgress", "New")]
-    [InlineData("InProgress", "Completed")]
-    [InlineData("InProgress", "Cancelled")]
-    [InlineData("InProgress", "WaitingOnParts")]
     [InlineData("InProgress", "WaitingOnCustomer")]
-    [InlineData("WaitingOnParts", "New")]
-    [InlineData("WaitingOnParts", "InProgress")]
     [InlineData("WaitingOnParts", "Completed")]
-    [InlineData("WaitingOnParts", "Cancelled")]
-    [InlineData("WaitingOnParts", "WaitingOnCustomer")]
-    [InlineData("WaitingOnCustomer", "New")]
-    [InlineData("WaitingOnCustomer", "InProgress")]
-    [InlineData("WaitingOnCustomer", "Completed")]
     [InlineData("WaitingOnCustomer", "Cancelled")]
-    [InlineData("WaitingOnCustomer", "WaitingOnParts")]
     [InlineData("Completed", "New")]
     [InlineData("Completed", "InProgress")]
-    [InlineData("Completed", "Cancelled")]
-    [InlineData("Completed", "WaitingOnParts")]
-    [InlineData("Completed", "WaitingOnCustomer")]
     [InlineData("Cancelled", "New")]
-    [InlineData("Cancelled", "InProgress")]
     [InlineData("Cancelled", "Completed")]
-    [InlineData("Cancelled", "WaitingOnParts")]
-    [InlineData("Cancelled", "WaitingOnCustomer")]
-    public void IsValid_AllowedTransition_ReturnsTrue(string from, string to)
+    public void IsValid_DefaultVocabulary_AnyStatusToAnyOther_ReturnsTrue(string from, string to)
     {
-        StatusTransitions.IsValid(from, to).Should().BeTrue();
+        StatusTransitions.IsValid(from, to, Defaults).Should().BeTrue();
     }
 
     [Theory]
-    [InlineData("New", "New")]
-    [InlineData("InProgress", "InProgress")]
-    [InlineData("WaitingOnParts", "WaitingOnParts")]
-    [InlineData("WaitingOnCustomer", "WaitingOnCustomer")]
-    [InlineData("Completed", "Completed")]
-    [InlineData("Cancelled", "Cancelled")]
-    public void IsValid_SameStatus_ReturnsFalse(string from, string to)
+    [InlineData("New")]
+    [InlineData("InProgress")]
+    [InlineData("WaitingOnParts")]
+    [InlineData("WaitingOnCustomer")]
+    [InlineData("Completed")]
+    [InlineData("Cancelled")]
+    public void IsValid_SameStatus_ReturnsFalse(string status)
     {
-        StatusTransitions.IsValid(from, to).Should().BeFalse();
+        StatusTransitions.IsValid(status, status, Defaults).Should().BeFalse();
     }
 
     [Fact]
-    public void IsValid_UnknownFromStatus_ReturnsFalse()
+    public void IsValid_TargetNotInTheTenantsVocabulary_ReturnsFalse()
     {
-        StatusTransitions.IsValid("Unknown", "New").Should().BeFalse();
+        StatusTransitions.IsValid("New", "InProgress", Custom).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValid_TargetIsATenantDefinedStatus_ReturnsTrue()
+    {
+        StatusTransitions.IsValid("New", "st_diag", Custom).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsValid_FromAStatusTheTenantDeleted_ToAKnownStatus_ReturnsTrue()
+    {
+        // A request left in a deleted status must still be movable to one that exists.
+        StatusTransitions.IsValid("InProgress", "st_diag", Custom).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsValid_UnknownTarget_ReturnsFalse()
+    {
+        StatusTransitions.IsValid("New", "Unknown", Defaults).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValid_TargetMatchIsCaseSensitive()
+    {
+        StatusTransitions.IsValid("New", "inprogress", Defaults).Should().BeFalse();
     }
 
     [Theory]
@@ -68,51 +84,16 @@ public class StatusTransitionsTests
     [InlineData("New", "  ")]
     public void IsValid_NullOrWhitespace_ThrowsArgumentException(string? from, string? to)
     {
-        var act = () => StatusTransitions.IsValid(from!, to!);
+        var act = () => StatusTransitions.IsValid(from!, to!, Defaults);
 
         act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
-    public void GetAllowedTargets_New_ReturnsAllOtherStatuses()
+    public void IsValid_NullVocabulary_ThrowsArgumentNullException()
     {
-        var targets = StatusTransitions.GetAllowedTargets("New");
+        var act = () => StatusTransitions.IsValid("New", "InProgress", null!);
 
-        targets.Should().BeEquivalentTo(["InProgress", "Completed", "Cancelled", "WaitingOnParts", "WaitingOnCustomer"]);
-    }
-
-    [Fact]
-    public void GetAllowedTargets_Completed_ReturnsAllOtherStatuses()
-    {
-        var targets = StatusTransitions.GetAllowedTargets("Completed");
-
-        targets.Should().BeEquivalentTo(["New", "InProgress", "Cancelled", "WaitingOnParts", "WaitingOnCustomer"]);
-    }
-
-    [Fact]
-    public void GetAllowedTargets_WaitingOnCustomer_ReturnsAllOtherStatuses()
-    {
-        var targets = StatusTransitions.GetAllowedTargets("WaitingOnCustomer");
-
-        targets.Should().BeEquivalentTo(["New", "InProgress", "Completed", "Cancelled", "WaitingOnParts"]);
-    }
-
-    [Fact]
-    public void GetAllowedTargets_UnknownStatus_ReturnsEmpty()
-    {
-        var targets = StatusTransitions.GetAllowedTargets("Unknown");
-
-        targets.Should().BeEmpty();
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("  ")]
-    public void GetAllowedTargets_NullOrWhitespace_ThrowsArgumentException(string? status)
-    {
-        var act = () => StatusTransitions.GetAllowedTargets(status!);
-
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<ArgumentNullException>();
     }
 }

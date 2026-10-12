@@ -1,5 +1,6 @@
 using System.Text;
 using MudBlazor;
+using RVS.Domain.Validation;
 
 namespace RVS.Blazor.Intake.Pages;
 
@@ -13,6 +14,43 @@ namespace RVS.Blazor.Intake.Pages;
 public static class CustomerStatusFormatting
 {
     private const string GenericStatusDescription = "Your request is being processed.";
+
+    /// <summary>
+    /// Whether the dealer has given this status its own name (<c>Spec C-8</c>, issue #855): a
+    /// status they added, or a default they renamed. The fixed <c>New</c>, <c>Completed</c> and
+    /// <c>Cancelled</c> never are, and an unrenamed default keeps this page's own wording.
+    /// </summary>
+    private static bool IsDealerNamed(string? status, string? dealerLabel)
+    {
+        if (string.IsNullOrWhiteSpace(status) || string.IsNullOrWhiteSpace(dealerLabel)
+            || StatusVocabulary.IsFixed(status.Trim()))
+        {
+            return false;
+        }
+
+        var defaultName = StatusVocabulary.DefaultIntermediateStatuses()
+            .FirstOrDefault(s => string.Equals(s.Id, status.Trim(), StringComparison.Ordinal))?.Name;
+
+        return !string.Equals(defaultName, dealerLabel.Trim(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The one-line description, given the dealer's name for the status. A dealer-named
+    /// status gets the generic line, since this page cannot know what the name means.
+    /// </summary>
+    public static string DescribeStatus(string? status, string? dealerLabel) =>
+        IsDealerNamed(status, dealerLabel) ? GenericStatusDescription : DescribeStatus(status);
+
+    /// <summary>The chip label, given the dealer's name for the status: the dealer's name when they chose one.</summary>
+    public static string GetStatusLabel(string? status, string? dealerLabel) =>
+        IsDealerNamed(status, dealerLabel) ? dealerLabel!.Trim() : GetStatusLabel(status);
+
+    /// <summary>
+    /// The chip color, given the dealer's name for the status. A dealer-named status sits
+    /// between New and Completed, so it reads as open work, like the default holds.
+    /// </summary>
+    public static Color GetStatusColor(string? status, string? dealerLabel) =>
+        IsDealerNamed(status, dealerLabel) ? Color.Warning : GetStatusColor(status);
 
     /// <summary>
     /// Maps a stored status value to a one-line customer-facing description. Recognises the

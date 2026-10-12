@@ -44,6 +44,15 @@ public sealed record CustomerStatusItemResponseDto
     /// <summary>Current status, e.g. <c>New</c>, <c>InProgress</c>, <c>Completed</c>.</summary>
     public string Status { get; init; } = default!;
 
+    /// <summary>
+    /// The status's display name in the servicing tenant's vocabulary (<c>Spec C-8</c>), or
+    /// <c>null</c> when the status is not in it, in which case the page falls back to its own label.
+    /// </summary>
+    public string? StatusLabel { get; init; }
+
+    /// <summary>The status's badge color key (<c>Spec C-8</c>), or <c>null</c> alongside a null <see cref="StatusLabel"/>.</summary>
+    public string? StatusColor { get; init; }
+
     /// <summary>Phone number of the servicing location, or <c>null</c> when not on file.</summary>
     public string? LocationPhone { get; init; }
 

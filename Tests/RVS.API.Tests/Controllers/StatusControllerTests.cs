@@ -5,6 +5,7 @@ using RVS.API.Controllers;
 using RVS.Domain.DTOs;
 using RVS.Domain.Entities;
 using RVS.Domain.Interfaces;
+using RVS.Domain.Validation;
 
 namespace RVS.API.Tests.Controllers;
 
@@ -15,16 +16,20 @@ public class StatusControllerTests
     private readonly Mock<IServiceRequestService> _srServiceMock = new();
     private readonly Mock<ILocationService> _locationServiceMock = new();
     private readonly Mock<IStatusLinkService> _statusLinkServiceMock = new();
+    private readonly Mock<ITenantStatusService> _tenantStatusServiceMock = new();
     private readonly StatusController _sut;
 
     public StatusControllerTests()
     {
+        _tenantStatusServiceMock.Setup(s => s.GetStatusesAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(StatusVocabulary.Build(null));
         _sut = new StatusController(
             _globalAcctServiceMock.Object,
             _profileServiceMock.Object,
             _srServiceMock.Object,
             _locationServiceMock.Object,
-            _statusLinkServiceMock.Object);
+            _statusLinkServiceMock.Object,
+            _tenantStatusServiceMock.Object);
     }
 
     // ── RequestStatusLink (issue #862) ───────────────────────────────────────
@@ -74,6 +79,33 @@ public class StatusControllerTests
         item.SubmittedAtUtc.Should().Be(new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc));
         item.Status.Should().Be("New");
         item.LocationPhone.Should().Be("555-0100");
+    }
+
+    [Fact]
+    public async Task GetStatus_ShouldLabelTheStatusInTheServicingTenantsVocabulary()
+    {
+        ArrangeHappyPath();
+        _srServiceMock.Setup(s => s.GetByIdAsync("ten_1", "sr_1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ServiceRequest { Id = "sr_1", TenantId = "ten_1", LocationId = "loc_1", Status = "st_diag", CreatedByUserId = "intake" });
+        _tenantStatusServiceMock.Setup(s => s.GetStatusesAsync("ten_1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(StatusVocabulary.Build([new TenantStatusEmbedded { Id = "st_diag", Name = "Diagnosing", Color = "teal" }]));
+
+        var result = await _sut.GetStatus("valid-token", CancellationToken.None);
+
+        var dto = result.Result.Should().BeOfType<OkObjectResult>().Subject
+            .Value.Should().BeOfType<CustomerStatusResponseDto>().Subject;
+        dto.ServiceRequests.Single().StatusLabel.Should().Be("Diagnosing");
+        dto.ServiceRequests.Single().StatusColor.Should().Be("teal");
+    }
+
+    [Fact]
+    public async Task GetStatus_ShouldReadEachTenantsVocabularyOnce()
+    {
+        ArrangeHappyPath();
+
+        await _sut.GetStatus("valid-token", CancellationToken.None);
+
+        _tenantStatusServiceMock.Verify(s => s.GetStatusesAsync("ten_1", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

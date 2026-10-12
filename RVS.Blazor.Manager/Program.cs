@@ -65,6 +65,11 @@ builder.Services.AddScoped<RVS.UI.Shared.Services.AttachmentApiClient>(sp =>
     new(sp.GetRequiredService<IHttpClientFactory>().CreateClient("RVS.API")));
 builder.Services.AddScoped<RVS.UI.Shared.Services.IntakeInviteApiClient>(sp =>
     new(sp.GetRequiredService<IHttpClientFactory>().CreateClient("RVS.API")));
+builder.Services.AddScoped<RVS.UI.Shared.Services.TenantStatusApiClient>(sp =>
+    new(sp.GetRequiredService<IHttpClientFactory>().CreateClient("RVS.API")));
+
+// The tenant's status vocabulary (Spec C-8, issue #855), shared by the board and request pages.
+builder.Services.AddScoped<RVS.Blazor.Manager.State.StatusVocabularyState>();
 
 // Platform-admin provisioning (issue #563) — the hidden /admin pages. The API is the only gate.
 builder.Services.AddScoped<AdminApiClient>(sp =>

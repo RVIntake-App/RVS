@@ -1,0 +1,105 @@
+@* ──────────────────────────────────────────────────────────────────────────
+   Delete one of the tenant's statuses (Spec C-8, issue #855). Requests in it,
+   at any of the tenant's locations, move to the status chosen here.
+   ────────────────────────────────────────────────────────────────────────── *@
+<MudDialog Visible="Visible" VisibleChanged="OnVisibleChanged" Options="DialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Delete "@Status?.Name"?</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width: min(360px, 80vw);">
+            <MudText Typo="Typo.body2">
+                Any requests in this status, at every location, move to the status you choose.
+            </MudText>
+            <MudSelect T="string"
+                       @bind-Value="_target"
+                       Label="Move requests to"
+                       Variant="Variant.Outlined"
+                       AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+                @foreach (var option in Targets)
+                {
+                    <MudSelectItem T="string" Value="@option.Id">@option.Name</MudSelectItem>
+                }
+            </MudSelect>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Icon="@Icons.Material.Filled.ErrorOutline">@_error</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="CloseAsync" Disabled="_saving">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete"
+                   OnClick="DeleteAsync" Disabled="@(_saving || _target is null)">
+            Delete
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private static readonly DialogOptions DialogOptions = new() { MaxWidth = MaxWidth.Small, CloseButton = true };
+
+    private string? _target;
+    private string? _error;
+    private bool _saving;
+    private bool _wasVisible;
+
+    /// <summary>Whether the dialog is open.</summary>
+    [Parameter]
+    public bool Visible { get; set; }
+
+    /// <summary>Raised when the dialog opens or closes.</summary>
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    /// <summary>The status being deleted.</summary>
+    [Parameter]
+    public TenantStatusDto? Status { get; set; }
+
+    /// <summary>Where its requests can go: every other status.</summary>
+    [Parameter]
+    public IReadOnlyList<TenantStatusDto> Targets { get; set; } = [];
+
+    /// <summary>Deletes, moving requests to the chosen status id. Returns null on success, or a message to show.</summary>
+    [Parameter]
+    public Func<string, Task<string?>>? OnDelete { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && !_wasVisible)
+        {
+            _target = Targets.FirstOrDefault()?.Id;
+            _error = null;
+            _saving = false;
+        }
+
+        _wasVisible = Visible;
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (OnDelete is null || _target is null)
+        {
+            return;
+        }
+
+        _saving = true;
+        _error = await OnDelete(_target);
+        _saving = false;
+
+        if (_error is null)
+        {
+            await CloseAsync();
+        }
+    }
+
+    private Task CloseAsync() => OnVisibleChanged(false);
+
+    private async Task OnVisibleChanged(bool visible)
+    {
+        Visible = visible;
+        await VisibleChanged.InvokeAsync(visible);
+    }
+}

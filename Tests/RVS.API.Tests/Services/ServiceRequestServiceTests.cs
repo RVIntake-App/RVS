@@ -12,12 +12,13 @@ public class ServiceRequestServiceTests
     private readonly Mock<IServiceRequestRepository> _repoMock = new();
     private readonly Mock<IUserContextAccessor> _userContextMock = new();
     private readonly Mock<IPacketGenerationService> _packetGenerationMock = new();
+    private readonly Mock<ITenantConfigRepository> _tenantConfigRepoMock = new();
     private readonly ServiceRequestService _sut;
 
     public ServiceRequestServiceTests()
     {
         _userContextMock.Setup(u => u.UserId).Returns("usr_test");
-        _sut = new ServiceRequestService(_repoMock.Object, _userContextMock.Object, _packetGenerationMock.Object);
+        _sut = new ServiceRequestService(_repoMock.Object, _userContextMock.Object, _packetGenerationMock.Object, _tenantConfigRepoMock.Object);
     }
 
     // ── GetByIdAsync ─────────────────────────────────────────────────────────
@@ -462,6 +463,85 @@ public class ServiceRequestServiceTests
         result.Status.Should().Be("InProgress");
         result.UpdatedByUserId.Should().Be("usr_test");
     }
+
+    // ── Tenant status vocabulary (Spec C-8, issue #855) ──────────────────────
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenTargetIsATenantDefinedStatus_ShouldUpdateStatus()
+    {
+        SetupTenantStatuses(new TenantStatusEmbedded { Id = "st_diag", Name = "Diagnosing", Color = "blue" });
+        var existing = BuildServiceRequest();
+        _repoMock.Setup(r => r.GetByIdAsync("ten_1", existing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        _repoMock.Setup(r => r.UpdateAsync(It.IsAny<ServiceRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ServiceRequest e, CancellationToken _) => e);
+
+        var result = await _sut.UpdateStatusAsync("ten_1", existing.Id, "st_diag");
+
+        result.Status.Should().Be("st_diag");
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_WhenTargetIsADefaultTheTenantDeleted_ShouldThrowArgumentException()
+    {
+        SetupTenantStatuses(new TenantStatusEmbedded { Id = "st_diag", Name = "Diagnosing", Color = "blue" });
+        var existing = BuildServiceRequest();
+        _repoMock.Setup(r => r.GetByIdAsync("ten_1", existing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+
+        var act = () => _sut.UpdateStatusAsync("ten_1", existing.Id, "InProgress");
+
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*Invalid status transition*");
+    }
+
+    [Fact]
+    public async Task UpdateStatusAsync_ShouldReadTheVocabularyOfTheRequestsTenant()
+    {
+        var existing = BuildServiceRequest();
+        _repoMock.Setup(r => r.GetByIdAsync("ten_1", existing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        _repoMock.Setup(r => r.UpdateAsync(It.IsAny<ServiceRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ServiceRequest e, CancellationToken _) => e);
+
+        await _sut.UpdateStatusAsync("ten_1", existing.Id, "InProgress");
+
+        _tenantConfigRepoMock.Verify(r => r.GetAsync("ten_1", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenStatusChangesToATenantDefinedStatus_ShouldApply()
+    {
+        SetupTenantStatuses(new TenantStatusEmbedded { Id = "st_diag", Name = "Diagnosing", Color = "blue" });
+        var existing = BuildServiceRequest();
+        _repoMock.Setup(r => r.GetByIdAsync("ten_1", existing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        _repoMock.Setup(r => r.UpdateAsync(It.IsAny<ServiceRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ServiceRequest e, CancellationToken _) => e);
+
+        var result = await _sut.UpdateAsync("ten_1", existing.Id, BuildUpdateRequest() with { Status = "st_diag" });
+
+        result.Status.Should().Be("st_diag");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenStatusIsUnchanged_ShouldNotReadTheVocabulary()
+    {
+        var existing = BuildServiceRequest();
+        existing.Status = "InProgress";
+        _repoMock.Setup(r => r.GetByIdAsync("ten_1", existing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        _repoMock.Setup(r => r.UpdateAsync(It.IsAny<ServiceRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ServiceRequest e, CancellationToken _) => e);
+
+        await _sut.UpdateAsync("ten_1", existing.Id, BuildUpdateRequest() with { Status = "InProgress" });
+
+        _tenantConfigRepoMock.Verify(r => r.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    private void SetupTenantStatuses(params TenantStatusEmbedded[] intermediates) =>
+        _tenantConfigRepoMock.Setup(r => r.GetAsync("ten_1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TenantConfig { Id = "ten_1", TenantId = "ten_1", IntermediateStatuses = [.. intermediates] });
 
     // ── DeleteAsync ──────────────────────────────────────────────────────────
 

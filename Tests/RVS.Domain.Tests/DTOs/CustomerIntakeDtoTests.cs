@@ -100,7 +100,8 @@ public class CustomerIntakeDtoTests
         // number; Spec C-9 adds the manager-authored status note; issue #741 adds the issue
         // category's display name; issue #793 adds the servicing location's name and logo so
         // requests at different dealers are told apart; Spec C-12 (issue #844) adds the
-        // scheduled date/time, already formatted in its booked zone. Nothing customer-identifying and no
+        // scheduled date/time, already formatted in its booked zone; Spec C-8 (issue #855) adds the
+        // dealer's own name and color for the status. Nothing customer-identifying and no
         // free-text problem description crosses this boundary.
         var properties = typeof(CustomerStatusItemResponseDto)
             .GetProperties()
@@ -108,7 +109,7 @@ public class CustomerIntakeDtoTests
             .OrderBy(n => n);
 
         properties.Should().Equal(
-            "IssueCategory", "LocationLogoUrl", "LocationName", "LocationPhone", "ScheduledDisplay", "Status", "StatusNote", "SubmittedAtUtc", "Unit");
+            "IssueCategory", "LocationLogoUrl", "LocationName", "LocationPhone", "ScheduledDisplay", "Status", "StatusColor", "StatusLabel", "StatusNote", "SubmittedAtUtc", "Unit");
     }
 
     [Fact]
