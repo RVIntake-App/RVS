@@ -139,11 +139,12 @@ Every account login and operational address is a role alias on the product's own
 - **Aliases:** `azure@` · `github@` · `auth0@` · `sendgrid@` · `twilio@` · `godaddy@` · `stripe@` · `uspto@` · `bank@` · `billing@` · `ops@` · `dmarc@`, all delivering to `support@`. They are real aliases, not `you+azure@`, because several services reject plus-addressing. `godaddy@` is the registrar login and replaces the `registrar@` in earlier versions.
 - **DNS (Bicep, prod only):** `intakeApexM365MailExchange` points the apex MX at Microsoft 365, sets SPF to `v=spf1 include:spf.protection.outlook.com -all` and adds `autodiscover`. `intakeApexMailVerificationToken` carries Microsoft's `MS=` ownership value. DMARC stays `p=reject; sp=reject`. The details, including why the SPF is narrower than GoDaddy suggests, are in the Bicep README, "Intake apex mail posture".
 - **Repo:** `opsAlertEmailReceivers` is `ops@rvintake.com` and `dmarcReportingAddress` is `dmarc@rvintake.com` in both `.bicepparam` files. The reporting address is now in the same domain as the DMARC records, so no RFC 7489 authorization records are needed and the manual step at the ADS registrar is gone.
-- **Tested:** an alias delivers to `support@`, and mail sent from `support@` passes SPF and DMARC.
+- **Forwarding:** `support@` forwards everything to your inbox and keeps a copy. GoDaddy's Forwarding switch is not enough on its own: the tenant's **Default** remote domain blocks automatic forwarding, and Exchange then drops the forward without a bounce (`RESOLVER.MSGTYPE.AF` in the message trace). A remote-domain entry for the destination domain alone, with **Allow automatic forwarding** on, lets it through (Exchange admin center → Mail flow → Remote domains). Leave Default blocking. This mailbox receives the password resets for every account, so a forwarding rule planted by an attacker is the quiet way in, and Default dropping it to any other domain is the guard.
+- **Tested:** an alias delivers to `support@`; mail sent from `support@` passes SPF and DMARC; a forwarded copy reaches the destination inbox with SPF (rewritten to `rvintake.com`), DKIM, DMARC and ARC passing.
 
 **Still open:**
 
-- **Forwarding** from `support@` to your inbox, keeping a copy in the mailbox. GoDaddy hadn't enabled it yet on a brand-new mailbox. Microsoft 365 blocks automatic external forwarding by default, so test it once it's on.
+- **MFA on `support@rvintake.com`.** It can reset every other account, so it needs its own authenticator or passkey (mysignins.microsoft.com → Security info). GoDaddy-run tenants don't always turn it on.
 - **DKIM** for `rvintake.com`. GoDaddy's setup didn't offer it. Mail passes DMARC on SPF alone for now; add DKIM in the Microsoft 365 tenant and declare its two CNAMEs in Bicep.
 - **`support@` in `SiteIdentity.cs`** stays `support@arnolddigitalsolutions.com` until it changes together with the toll-free filing (§4.1, §4.8).
 - **The private account inventory** (§4.8, "Paperwork") records the GoDaddy account, its recovery methods and the setup history in the ADS repo.
@@ -280,6 +281,7 @@ ADS owns other products, so a sale of RV Intake is an asset sale. If the work ab
    - Add the buyer as Global Admin of the Entra tenant and as owner of the billing account.
    - Add the buyer as owner of the GitHub org, as admin of the Auth0, SendGrid and Twilio accounts, and on the registrar account.
    - Hand over the GoDaddy account that holds `rvintake.com` and its mailbox, and point the mailbox's forwarding at the buyer's inbox.
+   - In the mailbox's Exchange admin center, replace the `arnolddigitalsolutions.com` remote-domain entry with one for the buyer's domain (automatic forwarding on), or forwarding to them is dropped without a bounce (§4.4). Leave Default blocking.
 2. **Legal:**
    - Assign the customer contracts under §4.2's clause.
    - Assign the "RV Intake" trademark and record the assignment with the USPTO.
