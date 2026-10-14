@@ -83,7 +83,7 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Legal owner** | Arnold Digital Solutions (ADS) signs agreements, files toll-free verification (#680), and appears in the Intake footer. | **Decided:** ADS keeps RV Intake. ADS also owns other products, so a sale is an asset sale and every account, contract and the trademark has to be transferable on its own. | §4.1 |
 | **Customer-facing name** | No fictitious name registered. Legal pages say "Arnold Digital Solutions"; the toll-free filing says "Arnold Digital Solutions (doing business as RV Intake)". | Trading as RV Intake without a registered DBA. Contracts and invoices need one consistent "ADS d/b/a RV Intake" form. | §4.1 |
 | **Customer contract** | **Drafted (v1.2):** the Pilot Agreement names "Arnold Digital Solutions LLC, doing business as RV Intake", adds an assignment clause, and runs the X-3 license to successors and assigns. The `/terms` and `/privacy` pages carry the same successor and transfer wording. All of it still needs attorney review. | Until the attorney confirms the wording, the X-3 data license may not survive a sale, and every contract may need re-signing. | §4.2 — **before Nova signs** |
-| **Trademark** | None filed. | The name is the main transferable asset after the code. Unregistered, a buyer gets only common-law rights. | §4.3 |
+| **Trademark** | None filed. | **Decided:** the name and logo stay. The word mark is descriptive, so expect the Supplemental Register at best, after use. A buyer relies on the clearance search and the domain more than on the registration. | §4.3 |
 | **Domains** | `rvintake.com` (product) and `rvserviceflow.com` (now the RVS umbrella, stays with ADS). DNS zones are in Azure (good). Registrar account: to confirm. | The API origin `api.rvserviceflow.com`, the Auth0 audience and the claim namespace all sit on a domain RV Intake won't own. Registrant and registrar login for `rvintake.com` must belong to ADS for RV Intake. | §4.4, §4.8, §4.9 |
 | **Auth0** | One tenant (#610). It also holds Benefetch, ManagersFriend, RVMTP and other apps, all obsolete and to be deleted. | None once they're gone: the tenant is RV Intake's alone and hands over by changing its admins. The admin login still needs to be the `auth0@` alias. | §4.7 |
 | **Azure tenant** | **Confirmed:** one tenant, created with `markarnoldutah@gmail.com`, holding one subscription with only RV Intake resources. | No directory change needed. The open point is admin access: if the personal Microsoft account is the only Global Admin, the tenant can't be handed over cleanly. | §4.6 |
@@ -123,7 +123,9 @@ What stays here: the `/terms` and `/privacy` pages (`RVS.Blazor.Intake/Pages/Ter
 
 ### 4.3 Trademark "RV Intake" *(attorney)*
 
-The steps, and the descriptiveness question to settle before filing, are in `ADS/products/rv-intake/README.md` ("Trademark"). The registration belongs to ADS and is assigned to a buyer at sale (§7). A name change, if the attorney recommends one, is far cheaper before the domain work in §4.4 and §4.9.
+**Decided October 13 2026: the name "RV Intake" and the Service Tag logo stay.** The domain work in §4.4 and §4.9 proceeds on `rvintake.com`. "RV Intake" describes the product, so a Principal Register registration is unlikely; the plan is a clearance search with a written opinion, then a use-based Supplemental Register filing in Class 42 once there is use in commerce. The steps are in `ADS/products/rv-intake/README.md` ("Trademark"). Any registration belongs to ADS and is assigned to a buyer at sale (§7).
+
+What touches the product: product copy, the Guides and the legal pages use the name as a brand with a noun ("RV Intake™ service-intake software"), never as the name of the category.
 
 ### 4.4 Set up role-alias mail on an `rvintake.com` subdomain
 
