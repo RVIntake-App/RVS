@@ -1,5 +1,7 @@
 # Toll-free verification: application package (#659)
 
+**Status, Oct 13 2026: not filed.** Neither the Trust Hub profile nor either application exists yet.
+
 Filed with **Twilio**, one application per number. Azure Communication Services was removed on Oct 2 2026 ahead of its 2028 retirement; its two numbers (+1 866 231 9618, +1 833 239 8230) were released and their ACS applications abandoned. Everything below except the Twilio-specific fields carries over unchanged from the ACS package.
 
 | | Prod | Staging |
@@ -8,7 +10,7 @@ Filed with **Twilio**, one application per number. Azure Communication Services 
 | Number | *to buy* | *to buy* |
 | Volume | 1,000 / month | 100 / month (Twilio's lowest bucket above 10) |
 
-**Console path:** in the subaccount, **Phone Numbers → Regulatory Compliance → Toll-Free Verifications → Create**, or the **Submit verification** link on the number itself. Fill in the subaccount's **Trust Hub Business Profile** (Arnold Digital Solutions, EIN) first; the form pulls the company details from it.
+**Console path:** in the subaccount, **Phone Numbers → Regulatory Compliance → Toll-Free Verifications → Create**, or the **Submit verification** link on the number itself. Fill in the subaccount's **Trust Hub Business Profile** (Arnold Digital Solutions LLC, EIN) first; the form pulls the company details from it. Enter the legal name exactly as `SiteIdentity.LegalEntityName` shows it, which must also match the IRS record for the EIN.
 
 **Before you file:** the number must be in the subaccount's Messaging Service with **Advanced Opt-Out** on and the HELP reply set to sample 3 below, word for word. The reviewer may text HELP.
 
@@ -63,8 +65,8 @@ Send to **your own mobile only**. The record is written before the send is attem
 
 | Field | Value |
 |---|---|
-| Legal company name | **Arnold Digital Solutions** (doing business as RV Intake) |
-| Website | `https://rvintake.com`. The footer links privacy, terms and texting terms, and each one names Arnold Digital Solutions in its opening line (Spec A-15). |
+| Legal company name | **Arnold Digital Solutions LLC** (doing business as RV Intake) |
+| Website | `https://rvintake.com`. The footer links privacy, terms and texting terms, and each one names Arnold Digital Solutions LLC in its opening line (Spec A-15). |
 | Address / tax ID | *yours* |
 | Point of contact | *you*. **Use an inbox you read daily.** All status updates and any *More info needed* request go there and nowhere else. |
 
@@ -78,7 +80,7 @@ Company details are filed in RVS's own name, with the multi-dealer model stated 
 
 ### Program description (*paste*)
 
-> RV Intake (rvintake.com), operated by Arnold Digital Solutions, is software that RV dealership service departments use to collect customers' service requests. We send transactional text messages on behalf of the dealership a customer is already dealing with, from one toll-free number shared across the dealerships that use RV Intake. Every message begins with the name of the dealership it is sent for, and our texting terms state that RV Intake sends on the dealership's behalf.
+> RV Intake (rvintake.com), operated by Arnold Digital Solutions LLC, is software that RV dealership service departments use to collect customers' service requests. We send transactional text messages on behalf of the dealership a customer is already dealing with, from one toll-free number shared across the dealerships that use RV Intake. Every message begins with the name of the dealership it is sent for, and our texting terms state that RV Intake sends on the dealership's behalf.
 >
 > Recipients are only consumers who have (a) asked a dealership service advisor, on a live phone call, to text them a link to start a service request, or (b) entered their mobile number on the dealership's online service-request form and chosen "Text message" as their preferred contact method.
 >

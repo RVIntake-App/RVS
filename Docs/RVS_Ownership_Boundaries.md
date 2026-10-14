@@ -80,9 +80,9 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 
 | Area | Today | Problem for a handover | Fix (section) |
 |---|---|---|---|
-| **Legal owner** | Arnold Digital Solutions (ADS) signs agreements, files toll-free verification (#680), and appears in the Intake footer. | **Decided:** ADS keeps RV Intake. ADS also owns other products, so a sale is an asset sale and every account, contract and the trademark has to be transferable on its own. | §4.1 |
-| **Customer-facing name** | No fictitious name registered. Legal pages say "Arnold Digital Solutions"; the toll-free filing says "Arnold Digital Solutions (doing business as RV Intake)". | Trading as RV Intake without a registered DBA. Contracts and invoices need one consistent "ADS d/b/a RV Intake" form. | §4.1 |
-| **Customer contract** | **Drafted (v1.2):** the Pilot Agreement names "Arnold Digital Solutions LLC, doing business as RV Intake", adds an assignment clause, and runs the X-3 license to successors and assigns. The `/terms` and `/privacy` pages carry the same successor and transfer wording. All of it still needs attorney review. | Until the attorney confirms the wording, the X-3 data license may not survive a sale, and every contract may need re-signing. | §4.2 — **before Nova signs** |
+| **Legal owner** | Arnold Digital Solutions (ADS) signs agreements, will file the toll-free verification (#659, not yet filed), and is named on the Intake policy pages. | **Decided:** ADS keeps RV Intake. ADS also owns other products, so a sale is an asset sale and every account, contract and the trademark has to be transferable on its own. | §4.1 |
+| **Customer-facing name** | No fictitious name registered. Legal pages say "Arnold Digital Solutions LLC, doing business as RV Intake", matching the Pilot Agreement. The toll-free verification (#659) is not filed yet; its Trust Hub profile must use the same name (§4.1). | Trading as RV Intake without a registered DBA. Contracts and invoices need one consistent "ADS d/b/a RV Intake" form. | §4.1 |
+| **Customer contract** | **Drafted (v1.4):** the Pilot Agreement names "Arnold Digital Solutions LLC, doing business as RV Intake", adds an assignment clause, and runs the X-3 license to successors and assigns. The `/terms` and `/privacy` pages carry the same successor and transfer wording. All of it still needs attorney review. | Until the attorney confirms the wording, the X-3 data license may not survive a sale, and every contract may need re-signing. | §4.2 — **before Nova accepts** |
 | **Trademark** | None filed. | **Decided:** the name and logo stay. The word mark is descriptive, so expect the Supplemental Register at best, after use. A buyer relies on the clearance search and the domain more than on the registration. | §4.3 |
 | **Domains** | `rvintake.com` (product) and `rvserviceflow.com` (now the RVS umbrella, stays with ADS). DNS zones are in Azure (good). Registrar account: to confirm. | The API origin `api.rvserviceflow.com`, the Auth0 audience and the claim namespace all sit on a domain RV Intake won't own. Registrant and registrar login for `rvintake.com` must belong to ADS for RV Intake. | §4.4, §4.8, §4.9 |
 | **Auth0** | One tenant (#610). It also holds Benefetch, ManagersFriend, RVMTP and other apps, all obsolete and to be deleted. | None once they're gone: the tenant is RV Intake's alone and hands over by changing its admins. The admin login still needs to be the `auth0@` alias. | §4.7 |
@@ -90,7 +90,7 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Azure billing** | The only subscription in the tenant, so the bill carries nothing but RV Intake. Offer type and billing-account owner: to confirm (§5). Probably an individual account in your name, since the tenant was created with a personal Microsoft account. | A Visual Studio credit subscription can't go to a buyer at all. A pay-as-you-go account in your own name works at sale time, since billing transfers painlessly (§1), but it invoices you rather than ADS. | §4.6 |
 | **GitHub** | Personal account `markarnoldutah/RVS`. OIDC subjects are `repo:markarnoldutah/RVS:environment:*`. | You can't hand over a personal account. Moving the repo changes the OIDC subject, which breaks deploys. | §4.5 |
 | **Ops and DMARC email** | `ops@` and `support@arnolddigitalsolutions.com` (`prod.bicepparam`). DMARC authorization records sit in the ADS zone at its registrar. | Alerts and reports keep going to an address the buyer can't reach. Part of the DNS lives outside the product. | §4.4 |
-| **Customer contact** | `support@arnolddigitalsolutions.com` in `SiteIdentity.cs`, matching the Twilio toll-free filing. | Same, plus it's tied to the carrier filing. | §4.4 / §4.8 |
+| **Customer contact** | `support@arnolddigitalsolutions.com` in `SiteIdentity.cs`, the contact the Twilio toll-free verification (#659) will name. | Same, plus it's tied to the carrier filing. | §4.4 / §4.8 |
 | **SendGrid, Twilio** | One account each. Owner login and any sharing with other products: to confirm. | Login emails need to be product aliases, and the accounts must not be shared. | §4.8 |
 | **Auth0 identity mail** | Uses its own SendGrid key (Auth0 checklist §8). | Resolves itself if the SendGrid account is RV Intake's own. | §4.7 |
 | **Money** | To confirm: which bank account and card pay RV Intake's bills. | Mixed books make the asset sale's purchase-price allocation and due diligence harder. | §4.1 |
@@ -111,11 +111,11 @@ The entity structure, the fictitious-name registration, the dedicated bank accou
 
 1. **Write ADS's Florida name and address** on the Azure billing account, the registrar and Stripe once domestication completes. Until then they carry ADS's current details.
 2. **In Stripe** (build item 7), the legal name is ADS, and the public business name and statement descriptor are RV Intake.
-3. **Keep `SiteIdentity.cs` and the toll-free filing in step.** `LegalEntityName` is "Arnold Digital Solutions" today, without "LLC" or the DBA (Spec A-15). If the legal pages change to "Arnold Digital Solutions LLC d/b/a RV Intake", update the Twilio Trust Hub profile in the same change, because carriers check that they match. Domestication may also change the address on that profile.
+3. **Keep `SiteIdentity.cs` and the toll-free filing in step.** `LegalEntityName` is "Arnold Digital Solutions LLC", and the pages add "doing business as RV Intake" (Spec A-15), the same form as the Pilot Agreement. When the Twilio Trust Hub profile and the toll-free verification are filed (#659), they must show exactly this name, because carriers check that the site and the filing match. After filing, change them together. Domestication may also change the address on that profile.
 
-The toll-free verification is already filed under ADS (#680), so it doesn't need to be refiled.
+The toll-free verification has not been filed yet (#659). File it under ADS with this name, so it never needs refiling.
 
-### 4.2 Customer contract wording *(before the first signature)*
+### 4.2 Customer contract wording *(before the first customer accepts)*
 
 The Pilot Agreement and its wording (contracting party, assignment clause, the X-3 license running to successors and assigns) live in `ADS/products/rv-intake/legal/RVS_Pilot_Agreement.md`, pending the attorney's review.
 
@@ -190,7 +190,7 @@ For each account, the login email becomes the alias, the legal and billing name 
 |---|---|
 | **Registrar** (`rvintake.com`) | Put it in a registrar account whose login is `registrar@` and that holds no other product's domains. Registrant is ADS. Turn on auto-renew. `rvserviceflow.com` goes in ADS's own registrar account, not this one (§4.9). |
 | **SendGrid** | Login `sendgrid@`. If any other product sends through it, give that product its own account. |
-| **Twilio** | Login `twilio@`. Toll-free verification is filed per number in a business's name, and it is already filed under ADS (#680). Keep the Trust Hub profile in step with `SiteIdentity.cs` (§4.1). Moving a number between Twilio accounts goes through Twilio support. |
+| **Twilio** | Login `twilio@`. Toll-free verification is filed per number in a business's name. It is not filed yet (#659); file it under ADS. Keep the Trust Hub profile in step with `SiteIdentity.cs` (§4.1). Moving a number between Twilio accounts goes through Twilio support. |
 | **Stripe** (build item 7) | Open it for RV Intake alone from day one: legal name ADS, public business name and statement descriptor "RV Intake", payouts to the RV Intake bank account. Stripe accounts are hard to move between entities. |
 | **Bank** | The "ADS d/b/a RV Intake" account (§4.1). Bank accounts don't transfer in an asset sale; what matters is that the books separate cleanly. |
 | **USPTO** | Correspondence address `uspto@`. The registration is assigned to the buyer and recorded with the USPTO at sale. |

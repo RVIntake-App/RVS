@@ -33,7 +33,7 @@ The callers (`PacketGenerationService`, `IntakeOrchestrationService`, `IntakeInv
   - create a Messaging Service, put the number in its pool, and enable Advanced Opt-Out with the HELP text from `RVS.API/Integrations/InboundSmsReplyContent.cs`
   - create an API key (SID + secret)
   - note the subaccount Auth Token (webhook signatures need it)
-- [ ] **Trust Hub**: Business Profile for **Arnold Digital Solutions**. Twilio's verification asks for a Business Registration Number (EIN); confirm the current field list in the console.
+- [ ] **Trust Hub**: Business Profile for **Arnold Digital Solutions LLC** (exactly as `SiteIdentity.LegalEntityName`). Twilio's verification asks for a Business Registration Number (EIN); confirm the current field list in the console.
 - [ ] **Before submitting**: ship the Privacy page change (Phase 3) so the reviewer sees Twilio named as the text and email provider.
 - [ ] **Rewrite `Docs/ASOT/Infra/TollFreeEvidence/README.md` for Twilio:**
   - the console path (Phone Numbers → Regulatory Compliance → Toll-Free Verifications)
