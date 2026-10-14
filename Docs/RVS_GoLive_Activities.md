@@ -77,6 +77,14 @@ Nothing to wipe in Key Vault (configuration only, behind purge protection), the 
 
 ---
 
+## Source control
+
+| # | Action | Setting | Why it is parked until go-live |
+|---|---|---|---|
+| G-9 | Upgrade the Plover and RVI GitHub organizations to the paid Team plan, then make their repos private | No Bicep flag: org billing settings first, then each repo's visibility | Upgrade first, in that order. The deploy workflows run in the `staging` and `production` GitHub environments, and those hold the Static Web Apps deployment tokens and the Azure OIDC settings. On the Free plan, environments and environment secrets work only in public repos. Making a repo private before the upgrade breaks every deploy. After the switch, check that each environment still has its secrets and protection rules, and run one staging deploy to confirm. |
+
+---
+
 ## Pilot metrics (prod)
 
 The four pilot metrics (#528) are read from the first real packet onward. They come from Cosmos `service-requests` and the `intakeFormStarts` table (Spec A-13, #839), not from App Insights, which keeps 30 days and can drop data. The tracking approach is on #528; the queries are in [`Tools/PilotMetrics.md`](../Tools/PilotMetrics.md).

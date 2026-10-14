@@ -11,7 +11,9 @@ Two things to set up. Ten minutes, once.
 
 **You'll need your link.** It looks like `go.rvintake.com/your-store-name`. If you don't have
 it, ask whoever set up your RVS account. Use this exact link — it's how we can tell you later
-which of these actually brought jobs in.
+which of these actually brought jobs in. Each message below adds an ending to the link,
+`?src=textrepl` or `?src=quickreply`. Keep that ending: it tells us which of the two setups
+the customer came from.
 
 ---
 
@@ -26,14 +28,14 @@ You don't want to type that link a dozen times a day. Give it a shortcut.
    *If **Text shortcuts** doesn't appear in Samsung Keyboard settings, look under **More typing options**.*
 
 4. Tap **Add**.
-5. In **Shortcut**, type something short you'd never type by accident — `rvlink` works.
+5. In **Shortcut**, type something short you'd never type by accident — `rv1` works.
 6. In **Expanded phrase**, type the whole message you want to send:
 
-   > Thanks for calling! Tap here to send us the details and a few photos: go.rvintake.com/your-store-name
+   > Thanks for calling! Tap here to send us the details and a few photos: go.rvintake.com/your-store-name?src=textrepl
 
 7. Tap **Add**.
 
-Now, typing `rvlink` offers the full message above the keyboard — tap it to insert.
+Now, typing `rv1` offers the full message above the keyboard — tap it to insert.
 
 Try it in Messages before you use it on a customer.
 
@@ -51,7 +53,7 @@ When a call comes in and you can't pick up, your phone can text the caller back 
 3. Tap **Quick decline messages**.
 4. Tap the **+** and add:
 
-   > Sorry I missed you — send us the details here and we'll call you right back: go.rvintake.com/your-store-name
+   > Sorry I missed you — send us the details here and we'll call you right back: go.rvintake.com/your-store-name?src=quickreply
 
 5. Tap **Save**.
 
@@ -70,7 +72,7 @@ bottom of the screen and pick the reply you saved. The call ends and the text go
 1. Open **Phone**, then **Recents**.
 2. **Swipe left** on the entry for the number you just spoke to — that opens a message to them.
    *(Swiping right calls them back, so swipe the correct way.)*
-3. Type `rvlink` and tap the phrase that appears above the keyboard.
+3. Type `rv1` and tap the phrase that appears above the keyboard.
 4. Send.
 
 **Either way, don't retype the link by hand.** A typed link is a job we can't trace back to

@@ -7,12 +7,12 @@ namespace RVS.Blazor.Intake;
 /// </summary>
 public static class SiteIdentity
 {
-    public const string LegalEntityName = "Arnold Digital Solutions";
+    public const string LegalEntityName = "Arnold Digital Solutions LLC";
 
     public const string ContactEmail = "support@arnolddigitalsolutions.com";
 
     public const string ContactMailto = "mailto:" + ContactEmail;
 
     /// <summary>Shown on the privacy policy and terms. Bump it whenever either page's wording changes.</summary>
-    public const string PoliciesLastUpdated = "October 11, 2026";
+    public const string PoliciesLastUpdated = "October 13, 2026";
 }

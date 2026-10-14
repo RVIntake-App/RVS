@@ -14,7 +14,9 @@ Two things to set up. Ten minutes, once.
 
 **You'll need your link.** It looks like `go.rvintake.com/your-store-name`. If you don't have
 it, ask whoever set up your RVS account. Use this exact link — it's how we can tell you later
-which of these actually brought jobs in.
+which of these actually brought jobs in. Each message below adds an ending to the link,
+`?src=textrepl` or `?src=quickreply`. Keep that ending: it tells us which of the two setups
+the customer came from.
 
 ---
 
@@ -28,13 +30,13 @@ You don't want to type that link a dozen times a day. Give it a shortcut.
 4. Tap the **+** in the top right.
 5. In the top box, type the whole message you want to send:
 
-   > Thanks for calling! Tap here to send us the details and a few photos: go.rvintake.com/your-store-name
+   > Thanks for calling! Tap here to send us the details and a few photos: go.rvintake.com/your-store-name?src=textrepl
 
-6. In **Shortcut**, type something short you'd never type by accident — `rvlink` works.
+6. In **Shortcut**, type something short you'd never type by accident — `rv1` works.
 7. Tap back to save.
 
 **This one works a little differently from an iPhone.** Android doesn't swap the text in
-automatically. Type `rvlink` and the full message appears as a **suggestion in the strip
+automatically. Type `rv1` and the full message appears as a **suggestion in the strip
 above the keyboard** — tap the suggestion to insert it.
 
 Try it in Messages before you use it on a customer.
@@ -50,7 +52,7 @@ When a call comes in and you can't pick up, your phone can text the caller back 
 3. Tap **Quick responses**.
 4. Tap one of the messages and replace it with:
 
-   > Sorry I missed you — send us the details here and we'll call you right back: go.rvintake.com/your-store-name
+   > Sorry I missed you — send us the details here and we'll call you right back: go.rvintake.com/your-store-name?src=quickreply
 
 5. Tap **OK**.
 
@@ -69,7 +71,7 @@ icon and pick the reply you saved. The call ends and the text goes out.
 1. Open **Phone**, then **Recents**.
 2. Tap the number you just spoke to.
 3. Tap **Message**.
-4. Type `rvlink` and tap the suggestion that appears above the keyboard.
+4. Type `rv1` and tap the suggestion that appears above the keyboard.
 5. Send.
 
 **Either way, don't retype the link by hand.** A typed link is a job we can't trace back to
