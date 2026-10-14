@@ -31,7 +31,6 @@ using OpenTelemetry;
 using OpenTelemetry.Trace;
 
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Azure Key Vault configuration provider — loads secrets from Key Vault in staging/production.
