@@ -51,6 +51,8 @@ public sealed class AuthorizationPolicyTests
                 policy.RequireClaim("permissions", "analytics:read"));
             options.AddPolicy("CanManageTenantConfig", policy =>
                 policy.RequireClaim("permissions", "tenants:config:read", "tenants:config:create", "tenants:config:update"));
+            options.AddPolicy("CanUpdateTenantConfig", policy =>
+                policy.RequireClaim("permissions", "tenants:config:update"));
             options.AddPolicy("CanReadLookups", policy =>
                 policy.RequireClaim("permissions", "lookups:read"));
             options.AddPolicy("CanSendIntakeInvites", policy =>
@@ -175,6 +177,28 @@ public sealed class AuthorizationPolicyTests
         var result = await _authorizationService.AuthorizeAsync(user, "CanManageTenantConfig");
 
         result.Succeeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CanUpdateTenantConfig_WithUpdatePermission_ShouldSucceed()
+    {
+        var user = CreateUserWithPermissions("tenants:config:update");
+
+        var result = await _authorizationService.AuthorizeAsync(user, "CanUpdateTenantConfig");
+
+        result.Succeeded.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("tenants:config:read")]
+    [InlineData("tenants:config:create")]
+    public async Task CanUpdateTenantConfig_WithoutUpdatePermission_ShouldFail(string permission)
+    {
+        var user = CreateUserWithPermissions(permission);
+
+        var result = await _authorizationService.AuthorizeAsync(user, "CanUpdateTenantConfig");
+
+        result.Succeeded.Should().BeFalse();
     }
 
     [Fact]

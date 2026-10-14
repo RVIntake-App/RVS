@@ -1,0 +1,122 @@
+@using RVS.Domain.Validation
+@using RVS.UI.Shared.Components
+
+@* ──────────────────────────────────────────────────────────────────────────
+   Add a status, or change one's name and color (Spec C-8, issue #855). Only
+   the tenant's own statuses come here; New, Completed and Cancelled are fixed.
+   The colors are the audited status palette, never a free color.
+   ────────────────────────────────────────────────────────────────────────── *@
+<MudDialog Visible="Visible" VisibleChanged="OnVisibleChanged" Options="DialogOptions">
+    <TitleContent>
+        <MudText Typo="Typo.h6">@(IsNew ? "Add status" : "Edit status")</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width: min(360px, 80vw);">
+            <MudTextField T="string"
+                          @bind-Value="_name"
+                          Label="Name"
+                          Variant="Variant.Outlined"
+                          MaxLength="StatusVocabulary.MaxNameLength"
+                          Counter="StatusVocabulary.MaxNameLength"
+                          Immediate="true"
+                          AutoFocus="true" />
+            <MudSelect T="string"
+                       @bind-Value="_color"
+                       Label="Color"
+                       Variant="Variant.Outlined"
+                       AnchorOrigin="Origin.BottomCenter" TransformOrigin="Origin.TopCenter">
+                @foreach (var color in StatusVocabulary.Colors)
+                {
+                    <MudSelectItem T="string" Value="@color">
+                        <StatusBadge Status="@color" Label="@PreviewLabel" Color="@color" />
+                    </MudSelectItem>
+                }
+            </MudSelect>
+            @if (_error is not null)
+            {
+                <MudAlert Severity="Severity.Error" Icon="@Icons.Material.Filled.ErrorOutline">@_error</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="CloseAsync" Disabled="_saving">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                   Disabled="@(_saving || string.IsNullOrWhiteSpace(_name))">
+            @(IsNew ? "Add" : "Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private static readonly DialogOptions DialogOptions = new() { MaxWidth = MaxWidth.Small, CloseButton = true };
+
+    private string? _name;
+    private string _color = StatusVocabulary.Colors[0];
+    private string? _error;
+    private bool _saving;
+
+    /// <summary>Whether the dialog is open.</summary>
+    [Parameter]
+    public bool Visible { get; set; }
+
+    /// <summary>Raised when the dialog opens or closes.</summary>
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    /// <summary>The status being edited, or null to add one.</summary>
+    [Parameter]
+    public TenantStatusDto? Status { get; set; }
+
+    /// <summary>
+    /// Saves the name and color. Returns null on success, or a message to show.
+    /// </summary>
+    [Parameter]
+    public Func<string, string, Task<string?>>? OnSave { get; set; }
+
+    private bool IsNew => Status is null;
+
+    private string PreviewLabel => string.IsNullOrWhiteSpace(_name) ? "Preview" : _name.Trim();
+
+    private bool _wasVisible;
+
+    protected override void OnParametersSet()
+    {
+        // Reset the fields each time the dialog opens.
+        if (Visible && !_wasVisible)
+        {
+            _name = Status?.Name;
+            _color = Status?.Color ?? StatusVocabulary.Colors[0];
+            _error = null;
+            _saving = false;
+        }
+
+        _wasVisible = Visible;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (OnSave is null || string.IsNullOrWhiteSpace(_name))
+        {
+            return;
+        }
+
+        _saving = true;
+        _error = await OnSave(_name.Trim(), _color);
+        _saving = false;
+
+        if (_error is null)
+        {
+            await CloseAsync();
+        }
+    }
+
+    private Task CloseAsync() => OnVisibleChanged(false);
+
+    private async Task OnVisibleChanged(bool visible)
+    {
+        Visible = visible;
+        await VisibleChanged.InvokeAsync(visible);
+    }
+}

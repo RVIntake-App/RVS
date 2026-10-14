@@ -25,6 +25,21 @@ public static class StatusBadgeFormatting
         _ => DefaultCssClass
     };
 
+    /// <summary>
+    /// Maps a status's palette color key (<c>Spec C-8</c>, issue #855) to the existing audited
+    /// status token class of the same hue, so a tenant-named status reuses a THEME-1 pairing.
+    /// </summary>
+    public static string GetCssClassForColor(string? color) => color switch
+    {
+        "blue" => "rvs-status-in-progress",
+        "amber" => "rvs-status-waiting-on-parts",
+        "teal" => "rvs-status-waiting-on-customer",
+        "green" => "rvs-status-new",
+        "purple" => "rvs-status-completed",
+        "gray" => "rvs-status-cancelled",
+        _ => DefaultCssClass
+    };
+
     private static string Canonicalize(string? status)
     {
         if (string.IsNullOrWhiteSpace(status))

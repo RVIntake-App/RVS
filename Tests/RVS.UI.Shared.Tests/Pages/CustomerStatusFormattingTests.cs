@@ -6,6 +6,67 @@ namespace RVS.UI.Shared.Tests.Pages;
 
 public class CustomerStatusFormattingTests
 {
+    // ---- The dealer's own status names (Spec C-8, issue #855) -------------------
+
+    [Fact]
+    public void GetStatusLabel_WithADealerAddedStatus_ShowsTheDealersName()
+    {
+        CustomerStatusFormatting.GetStatusLabel("st_diag", "Diagnosing").Should().Be("Diagnosing");
+    }
+
+    [Fact]
+    public void GetStatusLabel_WithARenamedDefaultStatus_ShowsTheDealersName()
+    {
+        CustomerStatusFormatting.GetStatusLabel("InProgress", "Repairing").Should().Be("Repairing");
+    }
+
+    [Fact]
+    public void GetStatusLabel_WithAnUnrenamedDefaultStatus_KeepsTheCustomerWording()
+    {
+        CustomerStatusFormatting.GetStatusLabel("WaitingOnCustomer", "Waiting on Customer").Should().Be("Waiting on You");
+    }
+
+    [Theory]
+    [InlineData("New")]
+    [InlineData("Completed")]
+    [InlineData("Cancelled")]
+    public void GetStatusLabel_ForAFixedStatus_KeepsTheStandardWording(string status)
+    {
+        CustomerStatusFormatting.GetStatusLabel(status, "Anything").Should().Be(status);
+    }
+
+    [Fact]
+    public void GetStatusLabel_WithNoDealerLabel_FallsBackToTheStoredValue()
+    {
+        CustomerStatusFormatting.GetStatusLabel("InProgress", null).Should().Be("In Progress");
+    }
+
+    [Fact]
+    public void DescribeStatus_WithADealerNamedStatus_ReturnsTheGenericLine()
+    {
+        CustomerStatusFormatting.DescribeStatus("st_diag", "Diagnosing").Should().Be("Your request is being processed.");
+        CustomerStatusFormatting.DescribeStatus("InProgress", "Repairing").Should().Be("Your request is being processed.");
+    }
+
+    [Fact]
+    public void DescribeStatus_WithAnUnrenamedDefaultStatus_KeepsItsSentence()
+    {
+        CustomerStatusFormatting.DescribeStatus("InProgress", "In Progress")
+            .Should().Be(CustomerStatusFormatting.DescribeStatus("InProgress"));
+    }
+
+    [Fact]
+    public void GetStatusColor_WithADealerNamedStatus_ReadsAsOpenWork()
+    {
+        CustomerStatusFormatting.GetStatusColor("st_diag", "Diagnosing").Should().Be(Color.Warning);
+    }
+
+    [Fact]
+    public void GetStatusColor_ForAFixedStatus_IsUnchanged()
+    {
+        CustomerStatusFormatting.GetStatusColor("Completed", "Completed").Should().Be(Color.Success);
+    }
+
     // ---- DescribeStatus -------------------------------------------------------
 
     [Theory]

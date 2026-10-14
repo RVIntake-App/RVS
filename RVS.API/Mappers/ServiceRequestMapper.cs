@@ -139,18 +139,25 @@ public static class ServiceRequestMapper
     /// </summary>
     /// <param name="entity">The service request.</param>
     /// <param name="location">The servicing location, or <c>null</c> when it cannot be found.</param>
-    public static CustomerStatusItemResponseDto ToCustomerStatusItemDto(this ServiceRequest entity, Location? location)
+    /// <param name="vocabulary">The servicing tenant's vocabulary (<c>Spec C-8</c>), which names the status and resolves a deleted one to its replacement.</param>
+    public static CustomerStatusItemResponseDto ToCustomerStatusItemDto(
+        this ServiceRequest entity,
+        Location? location,
+        TenantStatusVocabulary? vocabulary = null)
     {
         ArgumentNullException.ThrowIfNull(entity);
 
         var logoUrl = location?.Branding?.LogoUrl?.Trim();
+        var status = vocabulary?.Find(entity.Status);
 
         return new CustomerStatusItemResponseDto
         {
             Unit = ComposeAssetDisplay(entity.AssetInfo),
             IssueCategory = IssueCategoryVocabulary.GetName(entity.IssueCategory),
             SubmittedAtUtc = entity.CreatedAtUtc,
-            Status = entity.Status,
+            Status = status?.Id ?? entity.Status,
+            StatusLabel = status?.Name,
+            StatusColor = status?.Color,
             LocationPhone = TrimToNull(location?.Phone),
             LocationName = TrimToNull(location?.Name),
             LocationLogoUrl = LocationBrandingValidator.IsHttpsUrl(logoUrl) ? logoUrl : null,

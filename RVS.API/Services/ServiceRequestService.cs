@@ -15,6 +15,7 @@ public sealed class ServiceRequestService : IServiceRequestService
     private readonly IServiceRequestRepository _repository;
     private readonly IUserContextAccessor _userContext;
     private readonly IPacketGenerationService _packetGenerationService;
+    private readonly ITenantConfigRepository _tenantConfigRepository;
 
     /// <summary>
     /// Initializes a new instance of <see cref="ServiceRequestService"/>.
@@ -22,11 +23,20 @@ public sealed class ServiceRequestService : IServiceRequestService
     public ServiceRequestService(
         IServiceRequestRepository repository,
         IUserContextAccessor userContext,
-        IPacketGenerationService packetGenerationService)
+        IPacketGenerationService packetGenerationService,
+        ITenantConfigRepository tenantConfigRepository)
     {
         _repository = repository;
         _userContext = userContext;
         _packetGenerationService = packetGenerationService;
+        _tenantConfigRepository = tenantConfigRepository;
+    }
+
+    /// <summary>The tenant's status vocabulary (<c>Spec C-8</c>), defaults when it has none stored.</summary>
+    private async Task<IReadOnlyList<StatusDefinition>> GetStatusesAsync(string tenantId, CancellationToken cancellationToken)
+    {
+        var config = await _tenantConfigRepository.GetAsync(tenantId, cancellationToken);
+        return StatusVocabulary.Resolve(config?.IntermediateStatuses);
     }
 
     /// <inheritdoc />
@@ -111,7 +121,7 @@ public sealed class ServiceRequestService : IServiceRequestService
         }
 
         if (!string.Equals(existing.Status, request.Status, StringComparison.Ordinal)
-            && !StatusTransitions.IsValid(existing.Status, request.Status))
+            && !StatusTransitions.IsValid(existing.Status, request.Status, await GetStatusesAsync(tenantId, cancellationToken)))
         {
             throw new ArgumentException($"Invalid status transition from '{existing.Status}' to '{request.Status}'.");
         }
@@ -134,7 +144,7 @@ public sealed class ServiceRequestService : IServiceRequestService
         var existing = await _repository.GetByIdAsync(tenantId, id, cancellationToken)
             ?? throw new KeyNotFoundException($"Service request '{id}' not found.");
 
-        if (!StatusTransitions.IsValid(existing.Status, newStatus))
+        if (!StatusTransitions.IsValid(existing.Status, newStatus, await GetStatusesAsync(tenantId, cancellationToken)))
         {
             throw new ArgumentException($"Invalid status transition from '{existing.Status}' to '{newStatus}'.");
         }

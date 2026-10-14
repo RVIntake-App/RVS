@@ -8,6 +8,7 @@
 @inject ToastService Toasts
 @inject RVS.Blazor.Manager.State.ManagerAppState AppState
 @inject ThemeService ThemeService
+@inject RVS.Blazor.Manager.State.StatusVocabularyState Vocabulary
 @using RVS.Domain.Validation
 
 <PageTitle>RV Intake Manager — Service Board</PageTitle>
@@ -24,6 +25,16 @@
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
                             Updated @_lastRefreshed.Value.ToLocalTime().ToString("h:mm tt")
                         </MudText>
+                    }
+                    @* Spec C-8: a tenant-config manager adds statuses here, as columns before Done *@
+                    @if (Vocabulary.CanEdit && StatusVocabularyView.CanAdd(Vocabulary.Statuses))
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.ViewColumn"
+                                   OnClick="OpenAddStatusDialog">
+                            Add status
+                        </MudButton>
                     }
                     <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                                    Color="Color.Primary"
@@ -117,11 +128,12 @@
                                   Class="flex-grow-1"
                                   Style="min-height: 0; overflow-x: auto;">
                     <ChildContent>
-                        <div style="display: grid; grid-template-columns: repeat(4, minmax(316px, 1fr)); gap: 8px; height: 100%; min-width: 100%;">
-                            @foreach (var column in _columns)
+                        <div style="@GridStyle">
+                            @foreach (var column in Columns)
                             {
-                                var columnItems = _filteredBoardItems.Where(i => GetZoneForStatus(i.Status) == column.Status).ToList();
-                                var columnStatus = column.Status;
+                                var columnItems = _filteredBoardItems.Where(i => GetZoneForStatus(i.Status) == column.ZoneId).ToList();
+                                var columnStatus = StatusVocabularyView.StatusForZone(column.ZoneId);
+                                var columnZone = column.ZoneId;
                                 <div class="board-column" style="@($"display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: {ColumnBackground}; border-radius: 4px;")">
                                     <MudStack Spacing="0" Class="pa-2">
                                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
@@ -133,16 +145,45 @@
                                                     @columnItems.Count
                                                 </MudChip>
                                             </MudStack>
-                                            <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                                           Size="Size.Small"
-                                                           Class="column-header-add"
-                                                           Style="@($"color: {AddButtonColor};")"
-                                                           OnClick="@(() => OpenCreateDialog(columnStatus))"
-                                                           aria-label="@($"Add to {column.Title}")" />
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                               Size="Size.Small"
+                                                               Class="column-header-add"
+                                                               Style="@($"color: {AddButtonColor};")"
+                                                               OnClick="@(() => OpenCreateDialog(columnStatus))"
+                                                               aria-label="@($"Add to {column.Title}")" />
+                                                @if (Vocabulary.CanEdit && column.IsEditable)
+                                                {
+                                                    @* Spec C-8: the tenant's own statuses only; New and Done are fixed *@
+                                                    <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                                                             Size="Size.Small"
+                                                             AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight"
+                                                             aria-label="@($"Edit the {column.Title} status")">
+                                                        <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                                                     OnClick="@(() => OpenEditStatusDialog(columnZone))">
+                                                            Rename or recolor
+                                                        </MudMenuItem>
+                                                        <MudMenuItem Icon="@Icons.Material.Filled.ArrowBack"
+                                                                     Disabled="@(!StatusVocabularyView.CanMove(Vocabulary.Statuses, columnZone, -1))"
+                                                                     OnClick="@(() => MoveStatusAsync(columnZone, -1))">
+                                                            Move left
+                                                        </MudMenuItem>
+                                                        <MudMenuItem Icon="@Icons.Material.Filled.ArrowForward"
+                                                                     Disabled="@(!StatusVocabularyView.CanMove(Vocabulary.Statuses, columnZone, +1))"
+                                                                     OnClick="@(() => MoveStatusAsync(columnZone, +1))">
+                                                            Move right
+                                                        </MudMenuItem>
+                                                        <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                                                     OnClick="@(() => OpenDeleteStatusDialog(columnZone))">
+                                                            Delete
+                                                        </MudMenuItem>
+                                                    </MudMenu>
+                                                }
+                                            </MudStack>
                                         </MudStack>
                                         <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary); padding-left: 2px;">
                                             @column.Description
-                                            @if (column.Status == "Completed")
+                                            @if (column.ZoneId == StatusVocabularyView.DoneZone)
                                             {
                                                 @* Spec C-10: older closed work lives in the list, not on the board *@
                                                 <text> · </text><MudLink Href="/service-requests" Typo="Typo.caption">Older in Service Requests</MudLink>
@@ -152,7 +193,7 @@
 
                                     <div class="board-column-scroll">
                                         <MudDropZone T="BoardItem"
-                                                     Identifier="@column.Status"
+                                                     Identifier="@column.ZoneId"
                                                      Class="d-flex flex-column gap-2"
                                                      Style="flex-grow: 1; min-height: 0; border: none; outline: none; box-shadow: none;"
                                                      AllowReorder="true" />
@@ -238,7 +279,8 @@
                                                     @($"{boardItem.Summary.SubmissionPosition} of {boardItem.Summary.SubmissionCount}")
                                                 </MudChip>
                                             }
-                                                    @if (boardItem.Status is "WaitingOnParts" or "WaitingOnCustomer" or "Completed" or "Cancelled")
+                                                    @* Done holds two statuses, so its cards say which *@
+                                                    @if (boardItem.Status is StatusVocabulary.Completed or StatusVocabulary.Cancelled)
                                                     {
                                                         <MudChip T="string" Size="Size.Small"
                                                                  Variant="Variant.Outlined"
@@ -262,6 +304,15 @@
                             ServiceRequestId="@_detailDialogSrId"
                             CurrentStatus="@_detailDialogStatus"
                             OnChanged="OnDialogChangedAsync" />
+
+<StatusEditDialog @bind-Visible="_statusEditOpen"
+                  Status="@_statusBeingEdited"
+                  OnSave="SaveStatusAsync" />
+
+<StatusDeleteDialog @bind-Visible="_statusDeleteOpen"
+                    Status="@_statusBeingEdited"
+                    Targets="@DeleteTargets"
+                    OnDelete="DeleteStatusAsync" />
 
 @code {
     private bool _loading;
@@ -292,16 +343,17 @@
     /// <summary>Job-type filter (<c>Spec C-10</c> / C-11); null shows every job type.</summary>
     private string? _jobTypeFilter;
 
-    private static readonly BoardColumn[] _columns =
-    [
-        new("New",         "New",             Icons.Material.Filled.FiberNew,     Color.Info,    "Items that haven't been started"),
-        new("In Progress", "InProgress",      Icons.Material.Filled.Autorenew,    Color.Warning, "Items being actively worked"),
-        new("Waiting",     "WaitingOnParts",  Icons.Material.Filled.HourglassEmpty, Color.Warning, "Items waiting on parts, customer, etc"),
-        new("Done",        "Completed",       Icons.Material.Filled.CheckCircle,  Color.Success, $"Completed or cancelled in the last {BoardRetentionFilter.DoneColumnWindowDays} days"),
-    ];
+    /// <summary>Spec C-10: New, the tenant's own statuses in order (Spec C-8), then Done.</summary>
+    private IReadOnlyList<BoardColumnView> Columns => StatusVocabularyView.BuildColumns(Vocabulary.Statuses);
+
+    private string GridStyle =>
+        $"display: grid; grid-template-columns: repeat({Columns.Count}, minmax(316px, 1fr)); gap: 8px; height: 100%; min-width: 100%;";
 
     protected override async Task OnInitializedAsync()
     {
+        Vocabulary.OnChanged += HandleVocabularyChanged;
+        await Vocabulary.EnsureLoadedAsync();
+
         try
         {
             _dealershipId = await ResolveDealershipIdAsync();
@@ -332,6 +384,12 @@
     }
 
     private void HandleThemeChanged()
+    {
+        _needsContainerRefresh = true;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleVocabularyChanged()
     {
         _needsContainerRefresh = true;
         _ = InvokeAsync(StateHasChanged);
@@ -383,7 +441,8 @@
             _boardItems = items
                 .OrderBy(sr => sr.BoardSequence)
                 .ThenByDescending(sr => sr.CreatedAtUtc)
-                .Select(sr => new BoardItem(sr))
+                // A request in a deleted status sits in its replacement's column and takes that id when next moved.
+                .Select(sr => new BoardItem(sr) { Status = Vocabulary.Resolve(sr.Status) })
                 .ToList();
             ApplyFilter();
             _lastRefreshed = DateTime.UtcNow;
@@ -417,7 +476,7 @@
 
         // Optimistic update — only change status when moving to a different column
         if (zoneChanged)
-            item.Status = newZone;
+            item.Status = StatusVocabularyView.StatusForZone(newZone);
 
         // Update sequence numbers for all items in the target column
         var targetColumnItems = _boardItems
@@ -457,17 +516,16 @@
             var updatedSummary = detail.TechnicianSummary;
             if (zoneChanged)
             {
-                var newColumnTitle = _columns.FirstOrDefault(c => c.Status == newZone)?.Title ?? newZone;
                 updatedSummary = ActivityLogFormatter.PrependSystemEntry(
                     updatedSummary,
-                    $"Status changed to {newColumnTitle}");
+                    $"Status changed to {GetStatusLabel(item.Status)}");
             }
 
             // ApplyUpdate is a full overwrite: carry every field forward, job type included.
             var updateRequest = ServiceRequestMobileView.BuildUpdateRequest(detail, updatedSummary) with
             {
-                // Preserve original status on reorder; use zone identifier when column changes
-                Status = zoneChanged ? newZone : previousStatus,
+                // Preserve original status on reorder; use the column's status when it changes
+                Status = item.Status,
                 BoardSequence = item.Sequence,
                 UpdatedAtUtc = detail.UpdatedAtUtc,
             };
@@ -486,8 +544,7 @@
                 await SrClient.UpdateAsync(_dealershipId, sibling.Summary.Id, siblingUpdate);
             }
 
-            var columnTitle = _columns.FirstOrDefault(c => c.Status == newZone)?.Title ?? newZone;
-            Toasts.Success(zoneChanged ? $"Moved to {columnTitle}." : "Card reordered.");
+            Toasts.Success(zoneChanged ? $"Moved to {GetStatusLabel(item.Status)}." : "Card reordered.");
         }
         catch (Exception ex)
         {
@@ -539,7 +596,7 @@
             : items.Where(i => tokens.All(t => MatchesToken(i, t))).ToList();
     }
 
-    private static bool MatchesToken(BoardItem item, string token)
+    private bool MatchesToken(BoardItem item, string token)
     {
         var s = item.Summary;
         return ContainsCi(s.CustomerFullName, token)
@@ -673,10 +730,101 @@
         StateHasChanged();
     }
 
+    // ── Status editing (Spec C-8, issue #855) ───────────────────────────────
+
+    private bool _statusEditOpen;
+    private bool _statusDeleteOpen;
+    private TenantStatusDto? _statusBeingEdited;
+
+    private IReadOnlyList<TenantStatusDto> DeleteTargets => _statusBeingEdited is null
+        ? []
+        : StatusVocabularyView.DeleteTargets(Vocabulary.Statuses, _statusBeingEdited.Id);
+
+    private TenantStatusDto? FindStatus(string statusId) =>
+        Vocabulary.Statuses.FirstOrDefault(s => s.Id == statusId);
+
+    private void OpenAddStatusDialog()
+    {
+        _statusBeingEdited = null;
+        _statusEditOpen = true;
+    }
+
+    private void OpenEditStatusDialog(string statusId)
+    {
+        _statusBeingEdited = FindStatus(statusId);
+        _statusEditOpen = _statusBeingEdited is not null;
+    }
+
+    private void OpenDeleteStatusDialog(string statusId)
+    {
+        _statusBeingEdited = FindStatus(statusId);
+        _statusDeleteOpen = _statusBeingEdited is not null;
+    }
+
+    private async Task<string?> SaveStatusAsync(string name, string color)
+    {
+        var editing = _statusBeingEdited;
+        var request = editing is null
+            ? StatusVocabularyView.Add(Vocabulary.Statuses, name, color)
+            : StatusVocabularyView.Edit(Vocabulary.Statuses, editing.Id, name, color);
+
+        var error = await TrySaveVocabularyAsync(request);
+        if (error is null)
+        {
+            Toasts.Success(editing is null ? $"Added {name}." : $"Saved {name}.");
+        }
+
+        return error;
+    }
+
+    private async Task MoveStatusAsync(string statusId, int offset)
+    {
+        var error = await TrySaveVocabularyAsync(StatusVocabularyView.Move(Vocabulary.Statuses, statusId, offset));
+        if (error is not null)
+        {
+            Toasts.Error(error);
+        }
+    }
+
+    private async Task<string?> DeleteStatusAsync(string moveRequestsTo)
+    {
+        if (_statusBeingEdited is not { } deleting) return null;
+
+        var error = await TrySaveVocabularyAsync(
+            StatusVocabularyView.Delete(Vocabulary.Statuses, deleting.Id, moveRequestsTo));
+        if (error is null)
+        {
+            Toasts.Success($"Deleted {deleting.Name}.");
+            // Cards still carry the deleted id; reloading resolves them into the replacement's column.
+            await LoadBoardDataAsync();
+        }
+
+        return error;
+    }
+
+    /// <summary>Saves a vocabulary edit; returns null on success, or the API's sentence.</summary>
+    private async Task<string?> TrySaveVocabularyAsync(TenantStatusesUpdateRequestDto request)
+    {
+        try
+        {
+            await Vocabulary.SaveAsync(request);
+            return null;
+        }
+        catch (TenantStatusApiException ex)
+        {
+            return ex.Message;
+        }
+        catch (Exception)
+        {
+            return "The status change could not be saved. Try again.";
+        }
+    }
+
     public void Dispose()
     {
         AppState.OnLocationChanged -= HandleLocationChangedAsync;
         ThemeService.OnThemeChanged -= HandleThemeChanged;
+        Vocabulary.OnChanged -= HandleVocabularyChanged;
         _pollCts?.Cancel();
         _pollCts?.Dispose();
         _pollTimer?.Dispose();
@@ -694,34 +842,16 @@
         public MudDynamicDropItem<BoardItem>? DropItemRef { get; set; }
     }
 
-    private sealed record BoardColumn(string Title, string Status, string Icon, Color Color, string Description);
-
-    private static string GetStatusLabel(string status) => status switch
-    {
-        "New"               => "New",
-        "InProgress"        => "In Progress",
-        "WaitingOnParts"    => "Waiting on Parts",
-        "WaitingOnCustomer" => "Waiting on Customer",
-        "Completed"         => "Complete",
-        "Cancelled"         => "Cancelled",
-        _                   => status,
-    };
+    private string GetStatusLabel(string status) => Vocabulary.Label(status);
 
     /// <summary>
     /// The status chip on a card. A request closed without work (<c>Spec C-4</c>) shows its reason
     /// instead of a bare "Cancelled", so it reads differently from a manual cancel.
     /// </summary>
-    private static string GetCardStatusLabel(BoardItem item) =>
-        item.Status == "Cancelled" && item.Summary.DispositionReasonCode is { } reasonCode
+    private string GetCardStatusLabel(BoardItem item) =>
+        item.Status == StatusVocabulary.Cancelled && item.Summary.DispositionReasonCode is { } reasonCode
             ? $"Closed: {DispositionReasons.GetLabel(reasonCode)}"
             : GetStatusLabel(item.Status);
 
-    private static string GetZoneForStatus(string status) => status switch
-    {
-        "New"         => "New",
-        "InProgress"  => "InProgress",
-        "Completed"
-        or "Cancelled" => "Completed",
-        _              => "WaitingOnParts"
-    };
+    private string GetZoneForStatus(string status) => StatusVocabularyView.ZoneFor(Vocabulary.Statuses, status);
 }

@@ -27,6 +27,7 @@ public class StatusController : ControllerBase
     private readonly IServiceRequestService _serviceRequestService;
     private readonly ILocationService _locationService;
     private readonly IStatusLinkService _statusLinkService;
+    private readonly ITenantStatusService _tenantStatusService;
 
     /// <summary>
     /// Initializes a new instance of <see cref="StatusController"/>.
@@ -36,13 +37,15 @@ public class StatusController : ControllerBase
         ICustomerProfileService customerProfileService,
         IServiceRequestService serviceRequestService,
         ILocationService locationService,
-        IStatusLinkService statusLinkService)
+        IStatusLinkService statusLinkService,
+        ITenantStatusService tenantStatusService)
     {
         _globalCustomerAcctService = globalCustomerAcctService;
         _customerProfileService = customerProfileService;
         _serviceRequestService = serviceRequestService;
         _locationService = locationService;
         _statusLinkService = statusLinkService;
+        _tenantStatusService = tenantStatusService;
     }
 
     /// <summary>
@@ -93,10 +96,18 @@ public class StatusController : ControllerBase
 
         var serviceRequests = new List<CustomerStatusItemResponseDto>();
         var locations = new Dictionary<(string TenantId, string LocationId), Location?>();
+        var vocabularies = new Dictionary<string, TenantStatusVocabulary>(StringComparer.Ordinal);
 
         foreach (var link in acct.LinkedProfiles)
         {
             var profile = await _customerProfileService.GetByIdAsync(link.TenantId, link.ProfileId, ct);
+
+            // Each dealer names its own statuses (Spec C-8); read each tenant's list once.
+            if (!vocabularies.TryGetValue(link.TenantId, out var statuses))
+            {
+                statuses = await _tenantStatusService.GetStatusesAsync(link.TenantId, ct);
+                vocabularies[link.TenantId] = statuses;
+            }
 
             foreach (var srId in profile.ServiceRequestIds)
             {
@@ -108,7 +119,7 @@ public class StatusController : ControllerBase
                     locations[key] = location;
                 }
 
-                serviceRequests.Add(sr.ToCustomerStatusItemDto(location));
+                serviceRequests.Add(sr.ToCustomerStatusItemDto(location, statuses));
             }
         }
 

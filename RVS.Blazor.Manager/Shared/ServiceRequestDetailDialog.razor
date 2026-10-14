@@ -6,6 +6,7 @@
 @inject IJSRuntime JS
 @inject ThemeService ThemeService
 @inject AuthenticationStateProvider AuthProvider
+@inject RVS.Blazor.Manager.State.StatusVocabularyState Vocabulary
 @implements IDisposable
 
 <MudDrawer Open="Visible" OpenChanged="OnDrawerOpenChanged"
@@ -33,7 +34,7 @@
                             @FormatTitleLine(_sr)
                         </MudText>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <StatusBadge Status="@_sr.Status" />
+                            <StatusBadge Status="@_sr.Status" Label="@FormatStatus(_sr.Status)" Color="@Vocabulary.Color(_sr.Status)" />
                             @if (!string.IsNullOrEmpty(_sr.Priority))
                             {
                                 <PriorityBadge Priority="@_sr.Priority" />
@@ -396,7 +397,7 @@
                                                                 }
                                                             </td>
                                                             <td>@FormatCategoryName(member.IssueCategory)</td>
-                                                            <td><StatusBadge Status="@member.Status" /></td>
+                                                            <td><StatusBadge Status="@member.Status" Label="@FormatStatus(member.Status)" Color="@Vocabulary.Color(member.Status)" /></td>
                                                         </tr>
                                                     }
                                                 </tbody>
@@ -1553,6 +1554,7 @@
             return;
         }
 
+        await Vocabulary.EnsureLoadedAsync();
         await LoadServiceRequestAsync(ServiceRequestId);
     }
 
@@ -1689,8 +1691,9 @@
     private void RefreshSidebarSelections()
     {
         if (_sr is null) return;
-        _allowedStatuses = ["New", "InProgress", "WaitingOnCustomer", "WaitingOnParts", "Completed", "Cancelled"];
-        _selectedStatus = _sr.Status;
+        // Spec C-8: the tenant's own vocabulary, in board order.
+        _allowedStatuses = [.. Vocabulary.Statuses.Select(s => s.Id)];
+        _selectedStatus = Vocabulary.Resolve(_sr.Status);
         _selectedPriority = _sr.Priority ?? "Medium";
         _selectedJobType = _sr.JobType;
         _scheduleDate = _sr.ScheduledDate?.ToDateTime(TimeOnly.MinValue);
@@ -2448,14 +2451,8 @@
         await VisibleChanged.InvokeAsync(open);
     }
 
-    private static string FormatStatus(string status) => status switch
-    {
-        "InProgress"        => "In Progress",
-        "WaitingOnCustomer" => "Waiting on Customer",
-        "WaitingOnParts"    => "Waiting on Parts",
-        "Completed"         => "Complete",
-        _                   => status
-    };
+    /// <summary>The status's name in the tenant's vocabulary (Spec C-8).</summary>
+    private string FormatStatus(string status) => Vocabulary.Label(status);
 
     private static string ShortId(string id) =>
         string.IsNullOrEmpty(id) || id.Length <= 8 ? id : id[^8..];

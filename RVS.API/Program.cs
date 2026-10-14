@@ -137,6 +137,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CanManageTenantConfig", policy =>
         policy.RequireClaim("permissions", "tenants:config:read", "tenants:config:create", "tenants:config:update"));
 
+    // Tenant Config writes that need the update permission itself, not read or create (#855)
+    options.AddPolicy("CanUpdateTenantConfig", policy =>
+        policy.RequireClaim(ClaimsService.PermissionsClaimType, ClaimsService.TenantConfigUpdatePermission));
+
     // Lookups
     options.AddPolicy("CanReadLookups", policy =>
         policy.RequireClaim("permissions", "lookups:read"));
@@ -408,6 +412,7 @@ builder.Services.AddScoped<ILookupService, LookupService>();
 builder.Services.AddScoped<IDealershipService, DealershipService>();
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<ITenantConfigService, TenantConfigService>();
+builder.Services.AddScoped<ITenantStatusService, TenantStatusService>();
 builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
 builder.Services.AddScoped<ICustomerProfileService, CustomerProfileService>();
 builder.Services.AddScoped<IGlobalCustomerAcctService, GlobalCustomerAcctService>();

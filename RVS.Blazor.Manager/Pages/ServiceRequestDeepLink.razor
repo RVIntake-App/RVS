@@ -5,6 +5,7 @@
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 @inject ToastService Toasts
+@inject RVS.Blazor.Manager.State.StatusVocabularyState Vocabulary
 
 @*
     The request page the packet email links to (Spec C-7, issues #498 and #743).
@@ -56,7 +57,7 @@
                     <MudText Typo="Typo.subtitle1">@unit</MudText>
                 }
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2" Wrap="Wrap.Wrap">
-                    <StatusBadge Status="@_sr.Status" />
+                    <StatusBadge Status="@_sr.Status" Label="@Vocabulary.Label(_sr.Status)" Color="@Vocabulary.Color(_sr.Status)" />
                     <MudText Typo="Typo.body2">@(IssueCategoryVocabulary.GetName(_sr.IssueCategory) ?? _sr.IssueCategory)</MudText>
                 </MudStack>
 
@@ -81,7 +82,7 @@
                 }
             </MudPaper>
 
-            @* Status (Spec C-3) — one tap sets it *@
+            @* Status (Spec C-3) — the tenant's statuses (Spec C-8), one tap sets it *@
             <MudPaper Elevation="2" Class="pa-4">
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-3">
                     <MudText Typo="Typo.h6">Status</MudText>
@@ -91,9 +92,9 @@
                     }
                 </MudStack>
                 <MudGrid Spacing="2">
-                    @foreach (var option in ServiceRequestMobileView.Statuses)
+                    @foreach (var option in Vocabulary.Statuses)
                     {
-                        var isCurrent = string.Equals(option.Status, _sr.Status, StringComparison.Ordinal);
+                        var isCurrent = string.Equals(option.Id, Vocabulary.Resolve(_sr.Status), StringComparison.Ordinal);
                         <MudItem xs="6">
                             <MudButton Variant="@(isCurrent ? Variant.Filled : Variant.Outlined)"
                                        Color="Color.Primary"
@@ -102,7 +103,7 @@
                                        Disabled="_statusSaving"
                                        aria-pressed="@(isCurrent ? "true" : "false")"
                                        OnClick="@(() => SetStatusAsync(option))">
-                                @option.Label
+                                @option.Name
                             </MudButton>
                         </MudItem>
                     }
@@ -247,6 +248,8 @@
         // Same request already loaded — nothing to fetch.
         if (string.Equals(_loadedId, Id, StringComparison.Ordinal) && _sr is not null) return;
 
+        await Vocabulary.EnsureLoadedAsync();
+
         _loading = true;
         _error = null;
 
@@ -322,20 +325,20 @@
         }
     }
 
-    private async Task SetStatusAsync(StatusOption option)
+    private async Task SetStatusAsync(TenantStatusDto option)
     {
         if (_sr is null || _dealershipId is null) return;
-        if (string.Equals(option.Status, _sr.Status, StringComparison.Ordinal)) return;
+        if (string.Equals(option.Id, _sr.Status, StringComparison.Ordinal)) return;
 
         _statusSaving = true;
 
         try
         {
-            var summary = ActivityLogFormatter.PrependSystemEntry(_sr.TechnicianSummary, $"Status changed to {option.Label}");
-            var request = ServiceRequestMobileView.BuildUpdateRequest(_sr, summary) with { Status = option.Status };
+            var summary = ActivityLogFormatter.PrependSystemEntry(_sr.TechnicianSummary, $"Status changed to {option.Name}");
+            var request = ServiceRequestMobileView.BuildUpdateRequest(_sr, summary) with { Status = option.Id };
 
             SetRequest(await SrClient.UpdateAsync(_dealershipId, _sr.Id, request));
-            Toasts.Success($"Marked {option.Label}.");
+            Toasts.Success($"Marked {option.Name}.");
         }
         catch (AccessTokenNotAvailableException ex)
         {

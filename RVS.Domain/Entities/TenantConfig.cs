@@ -27,6 +27,55 @@ public class TenantConfig : EntityBase
     /// </summary>
     [JsonProperty("availableCapabilities")]
     public List<TenantCapabilityEmbedded> AvailableCapabilities { get; set; } = [];
+
+    /// <summary>
+    /// The tenant's own statuses between <c>New</c> and <c>Completed</c>, in board order
+    /// (<c>Spec C-8</c>, issue #855). <c>null</c> means the tenant has never edited them and
+    /// reads <see cref="Validation.StatusVocabulary.DefaultIntermediateStatuses"/>. Deleted statuses
+    /// stay in the list as <see cref="TenantStatusEmbedded.Retired"/> entries pointing to their
+    /// replacement. The fixed <c>New</c>, <c>Completed</c> and <c>Cancelled</c> are never stored here.
+    /// </summary>
+    [JsonProperty("intermediateStatuses")]
+    public List<TenantStatusEmbedded>? IntermediateStatuses { get; set; }
+}
+
+// ---------------------------------------------------------------------------
+// Embedded: TenantStatusEmbedded
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// One tenant-managed service-request status (<c>Spec C-8</c>). Its position in
+/// <see cref="TenantConfig.IntermediateStatuses"/> is its board order.
+/// </summary>
+public class TenantStatusEmbedded
+{
+    /// <summary>
+    /// Stable identifier stored on <see cref="ServiceRequest.Status"/>. Never changes on
+    /// rename. The defaults keep the values stored before issue #855 (<c>InProgress</c>,
+    /// <c>WaitingOnParts</c>, <c>WaitingOnCustomer</c>); new ones are server-generated.
+    /// </summary>
+    [JsonProperty("id")]
+    public string Id { get; set; } = string.Empty;
+
+    /// <summary>Display name, shown on the board, in the manager app and to the customer.</summary>
+    [JsonProperty("name")]
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Badge color key from <see cref="Validation.StatusVocabulary.Colors"/>.</summary>
+    [JsonProperty("color")]
+    public string Color { get; set; } = string.Empty;
+
+    /// <summary>
+    /// True once the tenant has deleted the status. A retired status is no longer a column or a
+    /// choice, and does not count toward the limit; requests still carrying its id are shown as
+    /// <see cref="ReplacedBy"/>, so a delete never rewrites requests.
+    /// </summary>
+    [JsonProperty("retired")]
+    public bool Retired { get; set; }
+
+    /// <summary>For a retired status, the active (or fixed) status that takes its place.</summary>
+    [JsonProperty("replacedBy")]
+    public string? ReplacedBy { get; set; }
 }
 
 // ---------------------------------------------------------------------------
