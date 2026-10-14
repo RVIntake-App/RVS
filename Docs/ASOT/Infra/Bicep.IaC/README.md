@@ -264,7 +264,7 @@ warming window stay manual. The `mailSendingDomainAction` deployment output
 repeats this, and the commands are in `deployment-cmds.azcli` §4e (2).
 
 1. **Authenticate the domain in SendGrid** (Settings → Sender Authentication) with the domain entered as `mail.rvintake.com` itself, not the apex, automated security on. Copy its three CNAMEs into `sendGridDnsRecords` in `prod.bicepparam` with names relative to `rvintake.com` (`em1234.mail`, `s1._domainkey.mail`, `s2._domainkey.mail`), redeploy (step 1), then press **Verify** in SendGrid. Every email is refused until SendGrid shows the domain Verified.
-2. **Check DMARC resolves and reports are authorized:** `dig +short TXT _dmarc.mail.rvintake.com` → `v=DMARC1; p=none; rua=mailto:support@arnolddigitalsolutions.com; adkim=r; aspf=r`. The reporting address is on another domain, so the authorization records at the registrar must exist too, or receivers drop the reports. Follow the `dmarcReportAuthorizationAction` output and see [DMARC aggregate reports](#dmarc-aggregate-reports-608) below.
+2. **Check DMARC resolves:** `dig +short TXT _dmarc.mail.rvintake.com` → `v=DMARC1; p=none; rua=mailto:dmarc@rvintake.com; adkim=r; aspf=r`. The reporting address is on `rvintake.com` itself, so no authorization records are needed and `dmarcReportAuthorizationAction` is empty. See [DMARC aggregate reports](#dmarc-aggregate-reports-608) below.
 3. **Turn tracking off account-wide** (Settings → Tracking: click, open, subscription). The API turns all three off on every message anyway; click tracking would rewrite the packet's photo links through `sendgrid.net`.
 4. **Warm the domain.** Let Jay Lyons's real intake traffic (P1, `#525`) send through `mail.rvintake.com` for **2–3 weeks** before any *other* shop's mailbox receives a packet. Ramp volume gradually; watch SendGrid's bounce and block stats and the DMARC `rua` reports.
 5. **In-room deliverability check (second pilot onward — `FS-7` in `RVS_Plan.md`).** When onboarding a shop after Jay: send a test packet while you are with the service manager, confirm it lands in the inbox and not Junk, and have them mark the sender safe on the spot. Not needed for the first pilot.
@@ -384,61 +384,57 @@ The corporate zone neither sends nor receives mail. The packet email goes out Fr
 
 ### Intake apex mail posture (`rvintake.com`, `#652`)
 
-The apex sends no mail. The packet email goes out From `mail.rvintake.com` (prod) and `mail-staging.rvintake.com` (staging), and each has its own `_dmarc` record. The prod deploy (`dnsIntake` module) publishes:
+The apex sends no product mail. The packet email goes out From `mail.rvintake.com` (prod) and `mail-staging.rvintake.com` (staging), and each has its own `_dmarc` record. What the apex does carry is the **RV Intake role-alias mailbox**: `support@rvintake.com` on Microsoft 365 from GoDaddy, with aliases such as `ops@`, `dmarc@`, `azure@` and `godaddy@` delivering to it (`Docs/RVS_Ownership_Boundaries.md` §4.4). The aliases sit on the domain the product owns, so in a sale they go with it. The prod deploy (`dnsIntake` module) publishes:
 
 | Record | Value | Why |
 | --- | --- | --- |
-| `TXT @` | `v=spf1 -all`, alongside the SWA apex validation token | no host is authorised to send as the apex |
+| `TXT @` | `v=spf1 include:spf.protection.outlook.com -all`, alongside the SWA apex validation token and `MS=ms…` | only Microsoft 365 may send as the apex; `MS=` is Microsoft 365's domain-ownership proof (`intakeApexMailVerificationToken`) |
 | `TXT _dmarc` | `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s; rua=mailto:<dmarcReportingAddress>` | act on failures, at the apex and on every subdomain without its own record; report forgery attempts (`#608`) |
-| `MX @` | `0 .` | RFC 7505 null MX: `rvintake.com` accepts no mail (`#608`) |
+| `MX @` | `0 rvintake-com.mail.protection.outlook.com` | delivers to the Microsoft 365 mailbox (`intakeApexM365MailExchange`) |
+| `CNAME autodiscover` | `autodiscover.outlook.com` | mail-client setup for the mailbox |
+
+**One parameter switches the mailbox records.** With `intakeApexM365MailExchange` set, the deploy writes the Microsoft 365 MX, the SPF include and the autodiscover CNAME. Blank it and the apex goes back to the no-mail posture it had from `#608` until 2026-10-13: null MX (`0 .`), `v=spf1 -all` and no autodiscover.
+
+**SPF is narrower than GoDaddy asks for.** GoDaddy's setup page suggests `v=spf1 include:secureserver.net -all`. That include does pull in `spf.protection.outlook.com`, but it also authorises about thirty GoDaddy shared-hosting ranges, any of whose customers could then send as `@rvintake.com`. Microsoft 365 is the only sender here, so the template uses the Microsoft include alone. GoDaddy's checklist may show the SPF line as not matching; mail still passes. It also suggests a CNAME `email → email.secureserver.net`, a GoDaddy webmail shortcut, which is not declared: use outlook.office.com.
+
+**DKIM is not on yet.** GoDaddy's setup offers no DKIM records. Mail from `support@` passes DMARC on SPF alignment alone (strict `aspf=s` holds, since Microsoft 365 uses `rvintake.com` as the envelope-from). Mail forwarded on by a third party can lose SPF, so DKIM is still worth adding: enable it for `rvintake.com` in the Microsoft 365 tenant, then declare its two `selector1/2._domainkey` CNAMEs here.
 
 **Before adding a sending subdomain, read this.** DMARC falls back to the organizational domain's policy for any subdomain that has no record of its own, and `sp=reject` means a new sender (a second SendGrid domain, a marketing provider) with no `_dmarc` record has all of its mail rejected from the first message. The sending side sees no useful error, and nobody changed a record. Give it its own `_dmarc` record in the same change that starts it sending. `sp=reject` was chosen over `sp=none` because `mail.rvintake.com` is expected to stay the only sender, and `sp=none` would leave every subdomain spoofable. The reasoning is also in `main.bicep`, next to the record.
 
-**The token has to be in the parameter file.** `intakeApexValidationToken` in `prod.bicepparam` carries the token Azure minted when the apex was registered (Deploy Production, step 2). If it is blank, the deploy does not declare the apex TXT set at all. That means no SPF, but it also means the deploy never deletes a token it cannot re-write. If the apex is re-registered, update the parameter before the next deploy. Staging never writes `@` or `_dmarc`.
+**The tokens have to be in the parameter file.** `intakeApexValidationToken` in `prod.bicepparam` carries the token Azure minted when the apex was registered (Deploy Production, step 2), and `intakeApexMailVerificationToken` carries Microsoft 365's `MS=` value. Both share the apex TXT set with SPF, and a deploy replaces that whole set. If `intakeApexValidationToken` is blank, the deploy does not declare the apex TXT set at all. That means no SPF and no `MS=` from Bicep, but it also means the deploy never deletes a token it cannot re-write. If the apex is re-registered, update the parameter before the next deploy. Staging never writes `@`, `_dmarc`, `MX` or `autodiscover`.
 
-**Null MX, because the reports go elsewhere (`#608`).** DMARC reports go to `support@arnolddigitalsolutions.com`, so nothing needs to receive mail at `rvintake.com`. The null MX says so and makes senders fail at once. Customer replies to `DoNotReply@mail.rvintake.com` are unaffected: MX is looked up for the exact host, and `mail.rvintake.com` never had one. If mailboxes are ever added at `rvintake.com`, replace the null MX with real exchangers in the same change.
+**Replies to the packet email are unaffected.** MX is looked up for the exact host: replies to `DoNotReply@mail.rvintake.com` look for an MX on `mail.rvintake.com`, which never had one, not on the apex.
 
 Verify after a prod deploy:
 
 ```bash
 NS=ns1-08.azure-dns.com        # rvintake.com's own NS set, NOT rvserviceflow.com's
-dig @$NS +short TXT rvintake.com                     # token AND "v=spf1 -all"
-dig @$NS +short TXT _dmarc.rvintake.com              # p=reject; sp=reject; ... rua=mailto:support@arnolddigitalsolutions.com
-dig @$NS +short MX rvintake.com                      # 0 .
-dig @$NS +short TXT _dmarc.mail.rvintake.com         # p=none; rua=mailto:support@arnolddigitalsolutions.com
-dig @$NS +short TXT _dmarc.mail-staging.rvintake.com # p=none; rua=mailto:support@arnolddigitalsolutions.com
+dig @$NS +short TXT rvintake.com                     # token, "MS=ms…" and "v=spf1 include:spf.protection.outlook.com -all"
+dig @$NS +short TXT _dmarc.rvintake.com              # p=reject; sp=reject; ... rua=mailto:dmarc@rvintake.com
+dig @$NS +short MX rvintake.com                      # 0 rvintake-com.mail.protection.outlook.com.
+dig @$NS +short CNAME autodiscover.rvintake.com      # autodiscover.outlook.com.
+dig @$NS +short TXT _dmarc.mail.rvintake.com         # p=none; rua=mailto:dmarc@rvintake.com
+dig @$NS +short TXT _dmarc.mail-staging.rvintake.com # p=none; rua=mailto:dmarc@rvintake.com
 ```
+
+> **History.** From `#608` (September 24 2026) until October 13 2026 the apex had a null MX and `v=spf1 -all`, because the DMARC reports went to `support@arnolddigitalsolutions.com` and nothing needed to receive mail at `rvintake.com`. The role aliases moved here from a planned `team.rvintake.com` subdomain because Microsoft 365 from GoDaddy does not support mailboxes on subdomains.
 
 ### DMARC aggregate reports (`#608`)
 
-All three DMARC records in `rvintake.com` send aggregate (`rua`) reports to `dmarcReportingAddress`: `_dmarc.mail`, `_dmarc.mail-staging` and, in prod, `_dmarc` at the apex. That address is **`support@arnolddigitalsolutions.com`**, a monitored mailbox on the filing entity's own domain and the same contact address the Intake footer shows. `rvserviceflow.com` has no `rua`; see its section above.
+All three DMARC records in `rvintake.com` send aggregate (`rua`) reports to `dmarcReportingAddress`: `_dmarc.mail`, `_dmarc.mail-staging` and, in prod, `_dmarc` at the apex. That address is **`dmarc@rvintake.com`**, a role alias on the apex mailbox (see the section above). `rvserviceflow.com` has no `rua`; see its section above.
 
-**The authorization records are manual and live outside Azure.** The reporting address is on a different organizational domain from the records that name it. Under RFC 7489 §7.1, a receiver first looks up `<policy-domain>._report._dmarc.<rua-domain>` for a `TXT "v=DMARC1"`, and a conforming one **drops the report if that record is missing**. The `arnolddigitalsolutions.com` zone is hosted at its registrar, not in Azure DNS, so Bicep cannot declare these records. Instead, each deploy prints the exact names it depends on in the `dmarcReportAuthorizationAction` output. Add them once at the registrar:
+**No authorization records are needed.** RFC 7489 §7.1 requires them only when the reporting address is on a different organizational domain from the records that name it, and `dmarc@rvintake.com` is in the same domain. The `dmarcReportAuthorizationAction` output is therefore empty. The template keeps the logic: if the address ever moves to another domain, each deploy prints the exact `<policy-domain>._report._dmarc.<rua-domain>` names that domain must publish as `TXT "v=DMARC1"`, one per policy domain, never a `*._report._dmarc` wildcard (that would let any domain on the internet send its reports to the mailbox).
 
-| Host (FQDN) | Type | Value | Needed by |
-| --- | --- | --- | --- |
-| `mail.rvintake.com._report._dmarc.arnolddigitalsolutions.com` | TXT | `v=DMARC1` | prod sending domain |
-| `rvintake.com._report._dmarc.arnolddigitalsolutions.com` | TXT | `v=DMARC1` | prod apex |
-| `mail-staging.rvintake.com._report._dmarc.arnolddigitalsolutions.com` | TXT | `v=DMARC1` | staging sending domain |
-
-Most registrar UIs want the host **relative to the zone**, so enter `mail.rvintake.com._report._dmarc` and so on without the trailing `.arnolddigitalsolutions.com`. The UI appends the zone name. Enter the full name and the record lands at `…arnolddigitalsolutions.com.arnolddigitalsolutions.com` and authorizes nothing.
-
-**Use one record per policy domain, not a `*._report._dmarc` wildcard.** A wildcard would let any domain on the internet send its reports to this mailbox.
-
-**If the address or a sending domain changes,** the list changes with it. Redeploy, read `dmarcReportAuthorizationAction` again, and add the new names before removing the old ones.
-
-Verify (any resolver; this zone is not on Azure DNS):
+Verify:
 
 ```bash
-for d in mail.rvintake.com rvintake.com mail-staging.rvintake.com; do
-  printf '%-28s ' "$d"; dig +short TXT "$d._report._dmarc.arnolddigitalsolutions.com"
-done                                                  # each: "v=DMARC1"
-dig +short MX arnolddigitalsolutions.com              # the mailbox's real exchanger
+dig +short TXT _dmarc.mail.rvintake.com @8.8.8.8     # rua=mailto:dmarc@rvintake.com
+dig +short MX rvintake.com @8.8.8.8                  # the mailbox's exchanger
 ```
 
 **What to expect.** Receivers send reports about once a day, as zipped XML attachments, and only for days when mail from the domain reached them. The first `mail.rvintake.com` report arrives a day or two after the first packet email a large receiver (Google, Microsoft, Yahoo) accepts. Check that each `<record>` has `<dkim>pass</dkim>` and `<spf>pass</spf>` under `<policy_evaluated>`. DMARC passes if either one aligns, but `#608` asks for both. If SPF fails alignment while DKIM passes, look at the envelope-from (`<identifiers>` / `<auth_results><spf><domain>`) before blaming the SPF record. A run of clean reports through warming is the evidence for any later move from `p=none` to `quarantine`/`reject`. That move is out of scope for `#608`.
 
-> **History.** `rua` pointed at `dmarc-reports@rvserviceflow.com` until 2026-09-17. It had no authorization record, and that domain's only MX was a third party's placeholder. It then pointed at `dmarc-reports@rvintake.com`, which bounced because `rvintake.com` had no MX. `#608` gave reports a real destination.
+> **History.** `rua` pointed at `dmarc-reports@rvserviceflow.com` until 2026-09-17. It had no authorization record, and that domain's only MX was a third party's placeholder. It then pointed at `dmarc-reports@rvintake.com`, which bounced because `rvintake.com` had no MX. `#608` gave reports a real destination: `support@arnolddigitalsolutions.com`, with three manual authorization records in that zone at its registrar. On 2026-10-13 it moved to `dmarc@rvintake.com` when the apex got a mailbox, and those records are no longer needed.
 
 ### Bind the `api.<zone>` host (`#633`)
 

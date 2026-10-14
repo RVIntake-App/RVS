@@ -1,7 +1,7 @@
 # RVS — Ownership Boundaries
 
-**Version:** 1.3 · October 13, 2026 (Azure tenant confirmed RV Intake-only; the other Auth0 apps are obsolete, so the tenant stays)
-**Status:** Action plan. The legal owner is decided (§4.1). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
+**Version:** 1.4 · October 13, 2026 (§4.4 done: role-alias mail on the `rvintake.com` apex, in Microsoft 365 from GoDaddy, because GoDaddy can't host a subdomain mailbox)
+**Status:** Action plan. The legal owner is decided (§4.1) and the role-alias mail is live (§4.4). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
 
 The goal: **RV Intake can be handed to a new owner as a single unit.** Every account, tenant, domain, trademark and contract it depends on should belong to RV Intake and nothing else, so that a sale is a handover, not a migration project.
 
@@ -61,10 +61,11 @@ Arnold Digital Solutions LLC (ADS), a Florida LLC   ← owns everything, signs e
     ├── GitHub organization: RV Intake only  →  repo RVS
     ├── Auth0 tenant: today's tenant, obsolete apps deleted
     ├── SendGrid account, Twilio account: RV Intake only
-    ├── Registrar account holding rvintake.com
+    ├── GoDaddy account holding rvintake.com and its
+    │   Microsoft 365 mailbox, nothing else
     │
-    └── Every login email is a role alias on rvintake.com's
-        mail subdomain (§4.4), forwarding to your inbox
+    └── Every login email is a role alias on rvintake.com
+        (§4.4), forwarding to your inbox
 
 Stays with ADS, not part of RV Intake:
     rvserviceflow.com   — "RVS", a marketing-only umbrella name. No legal role, no DBA.
@@ -84,12 +85,12 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Customer-facing name** | No fictitious name registered. Legal pages say "Arnold Digital Solutions LLC, doing business as RV Intake", matching the Pilot Agreement. The toll-free verification (#659) is not filed yet; its Trust Hub profile must use the same name (§4.1). | Trading as RV Intake without a registered DBA. Contracts and invoices need one consistent "ADS d/b/a RV Intake" form. | §4.1 |
 | **Customer contract** | **Drafted (v1.4):** the Pilot Agreement names "Arnold Digital Solutions LLC, doing business as RV Intake", adds an assignment clause, and runs the X-3 license to successors and assigns. The `/terms` and `/privacy` pages carry the same successor and transfer wording. All of it still needs attorney review. | Until the attorney confirms the wording, the X-3 data license may not survive a sale, and every contract may need re-signing. | §4.2 — **before Nova accepts** |
 | **Trademark** | None filed. | **Decided:** the name and logo stay. The word mark is descriptive, so expect the Supplemental Register at best, after use. A buyer relies on the clearance search and the domain more than on the registration. | §4.3 |
-| **Domains** | `rvintake.com` (product) and `rvserviceflow.com` (now the RVS umbrella, stays with ADS). DNS zones are in Azure (good). Registrar account: to confirm. | The API origin `api.rvserviceflow.com`, the Auth0 audience and the claim namespace all sit on a domain RV Intake won't own. Registrant and registrar login for `rvintake.com` must belong to ADS for RV Intake. | §4.4, §4.8, §4.9 |
+| **Domains** | `rvintake.com` (product) and `rvserviceflow.com` (now the RVS umbrella, stays with ADS). DNS zones are in Azure (good). `rvintake.com` is in a GoDaddy account of its own, with login `godaddy@` (§4.4); its registrant contact still needs ADS's name and address (§4.8). | The API origin `api.rvserviceflow.com`, the Auth0 audience and the claim namespace all sit on a domain RV Intake won't own. Registrant and registrar login for `rvintake.com` must belong to ADS for RV Intake. | §4.4, §4.8, §4.9 |
 | **Auth0** | One tenant (#610). It also holds Benefetch, ManagersFriend, RVMTP and other apps, all obsolete and to be deleted. | None once they're gone: the tenant is RV Intake's alone and hands over by changing its admins. The admin login still needs to be the `auth0@` alias. | §4.7 |
 | **Azure tenant** | **Confirmed:** one tenant, created with `markarnoldutah@gmail.com`, holding one subscription with only RV Intake resources. | No directory change needed. The open point is admin access: if the personal Microsoft account is the only Global Admin, the tenant can't be handed over cleanly. | §4.6 |
 | **Azure billing** | The only subscription in the tenant, so the bill carries nothing but RV Intake. Offer type and billing-account owner: to confirm (§5). Probably an individual account in your name, since the tenant was created with a personal Microsoft account. | A Visual Studio credit subscription can't go to a buyer at all. A pay-as-you-go account in your own name works at sale time, since billing transfers painlessly (§1), but it invoices you rather than ADS. | §4.6 |
 | **GitHub** | Personal account `markarnoldutah/RVS`. OIDC subjects are `repo:markarnoldutah/RVS:environment:*`. | You can't hand over a personal account. Moving the repo changes the OIDC subject, which breaks deploys. | §4.5 |
-| **Ops and DMARC email** | `ops@` and `support@arnolddigitalsolutions.com` (`prod.bicepparam`). DMARC authorization records sit in the ADS zone at its registrar. | Alerts and reports keep going to an address the buyer can't reach. Part of the DNS lives outside the product. | §4.4 |
+| **Ops and DMARC email** | **Done (§4.4):** `ops@rvintake.com` and `dmarc@rvintake.com`, role aliases on the product's own domain. No DMARC records live outside Azure any more. | None. | §4.4 |
 | **Customer contact** | `support@arnolddigitalsolutions.com` in `SiteIdentity.cs`, the contact the Twilio toll-free verification (#659) will name. | Same, plus it's tied to the carrier filing. | §4.4 / §4.8 |
 | **SendGrid, Twilio** | One account each. Owner login and any sharing with other products: to confirm. | Login emails need to be product aliases, and the accounts must not be shared. | §4.8 |
 | **Auth0 identity mail** | Uses its own SendGrid key (Auth0 checklist §8). | Resolves itself if the SendGrid account is RV Intake's own. | §4.7 |
@@ -127,21 +128,25 @@ What stays here: the `/terms` and `/privacy` pages (`RVS.Blazor.Intake/Pages/Ter
 
 What touches the product: product copy, the Guides and the legal pages use the name as a brand with a noun ("RV Intake™ service-intake software"), never as the name of the category.
 
-### 4.4 Set up role-alias mail on an `rvintake.com` subdomain
+### 4.4 Role-alias mail on `rvintake.com` *(done October 13 2026)*
 
-Every account login and operational address becomes a role alias on the product's own domain, forwarding to your inbox. In a sale the domain goes with the product: the buyer changes one forwarding rule and every login email stays the same. Aliases on any ADS-held domain stay with ADS, and each account would then have to be re-verified one at a time.
+Every account login and operational address is a role alias on the product's own domain, delivered to one mailbox and forwarded to your inbox. In a sale the domain goes with the product: the buyer changes one forwarding rule and every login email stays the same. Aliases on an ADS-held domain (`arnolddigitalsolutions.com`, `rvserviceflow.com`) would stay with ADS, and each account would then have to be re-verified one at a time.
 
-**That rules out both `arnolddigitalsolutions.com` and `rvserviceflow.com`.** Version 1.0 of this plan put the aliases on `rvserviceflow.com`. Under the entity plan that domain is the RVS umbrella and stays with ADS, so it would not go to a buyer.
+**What is in place:**
 
-**Use a dedicated mail subdomain of `rvintake.com`**, for example `team.rvintake.com`. The `rvintake.com` apex deliberately accepts no mail (null MX, #608). A subdomain gets its own MX and leaves the apex posture alone.
+- **Mailbox:** Microsoft 365 Email Essentials from GoDaddy, one mailbox, `support@rvintake.com`. It sits in a GoDaddy account that holds `rvintake.com` and nothing else, so the domain and its mail hand over together. GoDaddy runs it in its own Microsoft tenant, separate from the Azure Entra tenant (§4.6) and from any ADS mail.
+- **On the apex, not a subdomain.** This plan put the aliases on a subdomain such as `team.rvintake.com` so the apex could keep its null MX (#608). Microsoft 365 from GoDaddy can't host a subdomain mailbox, so the apex now receives mail. Product email is unaffected: it still goes out from `mail.rvintake.com`.
+- **Aliases:** `azure@` · `github@` · `auth0@` · `sendgrid@` · `twilio@` · `godaddy@` · `stripe@` · `uspto@` · `bank@` · `billing@` · `ops@` · `dmarc@`, all delivering to `support@`. They are real aliases, not `you+azure@`, because several services reject plus-addressing. `godaddy@` is the registrar login and replaces the `registrar@` in earlier versions.
+- **DNS (Bicep, prod only):** `intakeApexM365MailExchange` points the apex MX at Microsoft 365, sets SPF to `v=spf1 include:spf.protection.outlook.com -all` and adds `autodiscover`. `intakeApexMailVerificationToken` carries Microsoft's `MS=` ownership value. DMARC stays `p=reject; sp=reject`. The details, including why the SPF is narrower than GoDaddy suggests, are in the Bicep README, "Intake apex mail posture".
+- **Repo:** `opsAlertEmailReceivers` is `ops@rvintake.com` and `dmarcReportingAddress` is `dmarc@rvintake.com` in both `.bicepparam` files. The reporting address is now in the same domain as the DMARC records, so no RFC 7489 authorization records are needed and the manual step at the ADS registrar is gone.
+- **Tested:** an alias delivers to `support@`, and mail sent from `support@` passes SPF and DMARC.
 
-- **DNS change (Bicep):** add an MX record-set named for the subdomain, pointing at the forwarding provider, through `mxRecords` in `modules/dns.bicep` for the intake zone. Add any verification TXT the provider needs through `txtRecords`. Never add records by hand: an undeclared MX in the `rvserviceflow.com` zone once sat unnoticed until 2026-09-17. Keep the apex null MX and DMARC `p=reject; sp=reject` as they are. They govern mail *sent as* the domain, and these aliases only receive.
-- **Provider:** a forwarder that only needs MX records and supports a subdomain, since the zone is in Azure DNS and not Cloudflare. Don't host it in your ADS Workspace or M365: that ties the domain to ADS's mail system.
-- **Aliases:** `azure@` · `github@` · `auth0@` · `sendgrid@` · `twilio@` · `registrar@` · `stripe@` · `uspto@` · `bank@` · `billing@` · `ops@` · `dmarc@` · `support@`. Use real aliases, not `you+azure@`; several services reject plus-addressing.
-- **Repo changes once the aliases work:**
-  - `prod.bicepparam`: `ops@arnolddigitalsolutions.com` → `ops@<subdomain>.rvintake.com`.
-  - `dmarcReportingAddress` (both `.bicepparam` files) → `dmarc@<subdomain>.rvintake.com`. `main.bicep` already treats a subdomain of the intake zone as internal (`dmarcReportingIsExternal`), so no RFC 7489 authorization records are needed at all. `dmarcReportAuthorizationAction` comes back empty, and the manual step at the ADS registrar goes away. Update the Bicep README "DMARC aggregate reports" and "Intake apex mail posture" sections to match.
-  - `support@` in `SiteIdentity.cs`: change only together with the toll-free filing (§4.1, §4.8).
+**Still open:**
+
+- **Forwarding** from `support@` to your inbox, keeping a copy in the mailbox. GoDaddy hadn't enabled it yet on a brand-new mailbox. Microsoft 365 blocks automatic external forwarding by default, so test it once it's on.
+- **DKIM** for `rvintake.com`. GoDaddy's setup didn't offer it. Mail passes DMARC on SPF alone for now; add DKIM in the Microsoft 365 tenant and declare its two CNAMEs in Bicep.
+- **`support@` in `SiteIdentity.cs`** stays `support@arnolddigitalsolutions.com` until it changes together with the toll-free filing (§4.1, §4.8).
+- **The private account inventory** (§4.8, "Paperwork") records the GoDaddy account, its recovery methods and the setup history in the ADS repo.
 
 ### 4.5 Create the GitHub organization and transfer the repo
 
@@ -188,7 +193,7 @@ For each account, the login email becomes the alias, the legal and billing name 
 
 | Account | Action |
 |---|---|
-| **Registrar** (`rvintake.com`) | Put it in a registrar account whose login is `registrar@` and that holds no other product's domains. Registrant is ADS. Turn on auto-renew. `rvserviceflow.com` goes in ADS's own registrar account, not this one (§4.9). |
+| **Registrar** (`rvintake.com`) | **Done:** a GoDaddy account of its own, login `godaddy@`, holding `rvintake.com` and its Microsoft 365 mailbox (§4.4). Keep auto-renew on with a card that won't expire soon: if the domain lapsed, the mail that recovers every other account would stop with it. **Still to do:** set the domain's registrant contact to ADS's name, `godaddy@` and ADS's Florida address in one edit after domestication, since each registrant change can start a 60-day transfer lock. `rvserviceflow.com` stays in ADS's own registrar account (§4.9). |
 | **SendGrid** | Login `sendgrid@`. If any other product sends through it, give that product its own account. |
 | **Twilio** | Login `twilio@`. Toll-free verification is filed per number in a business's name. It is not filed yet (#659); file it under ADS. Keep the Trust Hub profile in step with `SiteIdentity.cs` (§4.1). Moving a number between Twilio accounts goes through Twilio support. |
 | **Stripe** (build item 7) | Open it for RV Intake alone from day one: legal name ADS, public business name and statement descriptor "RV Intake", payouts to the RV Intake bank account. Stripe accounts are hard to move between entities. |
@@ -274,12 +279,12 @@ ADS owns other products, so a sale of RV Intake is an asset sale. If the work ab
 1. **Accounts:**
    - Add the buyer as Global Admin of the Entra tenant and as owner of the billing account.
    - Add the buyer as owner of the GitHub org, as admin of the Auth0, SendGrid and Twilio accounts, and on the registrar account.
-   - Point the `rvintake.com` mail-subdomain forwarding at the buyer's inbox.
+   - Hand over the GoDaddy account that holds `rvintake.com` and its mailbox, and point the mailbox's forwarding at the buyer's inbox.
 2. **Legal:**
    - Assign the customer contracts under §4.2's clause.
    - Assign the "RV Intake" trademark and record the assignment with the USPTO.
-   - Transfer the `rvintake.com` registration.
+   - Transfer the `rvintake.com` registration, either with the GoDaddy account or to the buyer's registrar, together with the mailbox.
    - ADS withdraws its RV Intake fictitious name; the buyer files its own.
    - The buyer opens its own Stripe account and bank account. Neither transfers.
 3. **Remove yourself everywhere.**
-4. **Rotate every secret after you leave:** Key Vault values, the SendGrid and Twilio keys, Auth0 M2M secrets, and the SWA deployment tokens.
+4. **Rotate every secret after you leave:** Key Vault values, the SendGrid and Twilio keys, Auth0 M2M secrets, the SWA deployment tokens, and the GoDaddy and mailbox passwords and passkeys.

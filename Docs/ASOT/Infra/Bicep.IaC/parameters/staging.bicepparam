@@ -90,11 +90,12 @@ param logAnalyticsDailyCapGb = '0.08'
 // full-replace PUT, so an empty array here deletes any receiver added by hand
 // in the portal on every deploy (#639); the portal is not a safe place to set
 // this. Real ops alias, replacing the personal address that was a stopgap for
-// #639 (#648).
+// #639 (#648). On rvintake.com since 2026-10-13, so the alias goes with the product
+// (Ownership Boundaries §4.4); it lands in the support@rvintake.com mailbox.
 param opsAlertEmailReceivers = [
   {
     name: 'oncall'
-    email: 'ops@arnolddigitalsolutions.com'
+    email: 'ops@rvintake.com'
   }
 ]
 
@@ -123,21 +124,17 @@ param sendGridDnsRecords = [
   { name: 's1._domainkey.mail-staging', target: 's1.domainkey.u116141940.wl191.sendgrid.net' }
   { name: 's2._domainkey.mail-staging', target: 's2.domainkey.u116141940.wl191.sendgrid.net' }
 ]
-// DMARC aggregate-report destination (#608): a monitored mailbox on the filing
-// entity's own domain, the same address the Intake footer shows (SiteIdentity.cs).
-//
-// It is on a different organizational domain from the DMARC records that name
-// it, so RFC 7489 §7.1 applies. Receivers look up
-// <policy-domain>._report._dmarc.arnolddigitalsolutions.com for TXT "v=DMARC1"
-// and drop the report if it is missing. That zone is at the registrar, not in
-// Azure, so Bicep cannot write those records. The deploy prints the exact names
-// in the dmarcReportAuthorizationAction output, and README "DMARC aggregate
-// reports" has the steps and the dig checks.
+// DMARC aggregate-report destination (#608): the dmarc@ role alias on the
+// rvintake.com apex mailbox (Microsoft 365 from GoDaddy, Ownership Boundaries
+// §4.4). It is inside the intake zone, so RFC 7489 §7.1 authorization records are
+// not needed and dmarcReportAuthorizationAction comes back empty.
 //
 // History: dmarc-reports@rvserviceflow.com, whose only MX was a third party's
 // placeholder, until 2026-09-17. Then dmarc-reports@rvintake.com, which bounced
-// because rvintake.com has no MX. It now has a null MX (prod apex, #608).
-param dmarcReportingAddress = 'support@arnolddigitalsolutions.com'
+// because rvintake.com had no MX. Then support@arnolddigitalsolutions.com, with
+// manual authorization records in that zone (#608), until 2026-10-13, when the
+// rvintake.com apex got a real mailbox.
+param dmarcReportingAddress = 'dmarc@rvintake.com'
 
 // SMS (#661). The staging Twilio subaccount's toll-free number and the Messaging
 // Service that holds it. Both empty until they are bought and created in the

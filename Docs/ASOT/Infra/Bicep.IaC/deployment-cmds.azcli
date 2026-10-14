@@ -406,7 +406,7 @@ az webapp restart --name app-rvs-api-staging-wus3 --resource-group rg-rvs-stagin
 #   3. Back in SendGrid press Verify. Then confirm:
 #        dig +short CNAME s1._domainkey.mail.rvintake.com
 #        dig +short TXT _dmarc.mail.rvintake.com
-#        # → v=DMARC1; p=none; rua=mailto:support@arnolddigitalsolutions.com; adkim=r; aspf=r
+#        # → v=DMARC1; p=none; rua=mailto:dmarc@rvintake.com; adkim=r; aspf=r
 #   4. SendGrid → Settings → Tracking: turn Click, Open and Subscription tracking
 #      OFF account-wide. The API also turns them off per message; this covers
 #      anything sent from the console.

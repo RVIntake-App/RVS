@@ -152,6 +152,12 @@ param intakeZoneName string = 'rvintake.com'
 @description('The Intake SWA apex validation token, minted once when the apex was registered out of band. Read it from the zone (`az network dns record-set txt show -z rvintake.com -n @`), not from `az staticwebapp hostname show`, whose validationToken reads blank once the apex is Ready. Prod only. It shares the apex TXT record-set with the SPF string (#652), and a deploy PUTs that whole set, so Bicep has to carry the token or it deletes it. Empty = the apex TXT record-set is not declared at all: no SPF, and nothing already in the zone is removed.')
 param intakeApexValidationToken string = ''
 
+@description('The Microsoft 365 domain-ownership value ("MS=ms########") for the RV Intake role-alias mailbox on the rvintake.com apex (Ownership Boundaries §4.4), as shown by the GoDaddy Microsoft 365 setup. Prod only. Written into the same apex TXT record-set as intakeApexValidationToken and SPF, so it is declared only when that set is. Empty = not written.')
+param intakeApexMailVerificationToken string = ''
+
+@description('The Microsoft 365 mail exchanger for the rvintake.com apex role-alias mailbox (e.g. "rvintake-com.mail.protection.outlook.com"), from the GoDaddy Microsoft 365 setup. Prod only. Set = the apex MX points here, SPF authorises spf.protection.outlook.com, and autodiscover.rvintake.com is published. Empty = null MX and "v=spf1 -all": the apex accepts and sends no mail.')
+param intakeApexM365MailExchange string = ''
+
 @description('Subdomain prefix for the Manager SWA CNAME record, in the INTAKE zone (#632) — "manager" in prod, "manager-<env>" elsewhere. The literal "staging" in the non-prod label is load-bearing: RVS.Blazor.Manager/wwwroot/js/blazor-start.js selects its environment by matching that substring against the browser hostname, so a label without it would boot Production config against staging.')
 param managerDnsPrefix string = environmentName == 'prod' ? 'manager' : 'manager-${environmentName}'
 
@@ -624,17 +630,18 @@ var mailSendingDmarcTxtRecords = mailSendingDomainOn ? [
 
 // ── DMARC aggregate-report destination (#608) ──
 //
-// Reports go to dmarcReportingAddress, which since #608 is
-// support@arnolddigitalsolutions.com, a monitored mailbox on the filing entity's
-// own domain. It is on a different organizational domain from
-// the records that name it, so RFC 7489 §7.1 applies: before sending, a receiver
-// looks up <policy-domain>._report._dmarc.<rua-domain> for a TXT "v=DMARC1", and
-// a conforming one drops the report if it is missing. Those records belong in
-// the arnolddigitalsolutions.com zone, which is at its registrar, not in Azure, so
-// this template cannot declare them. It computes their exact names instead and
-// prints them in the dmarcReportAuthorizationAction output, the same way other
-// out-of-band steps are surfaced. Any policy domain whose record carries this
-// rua needs one: the sending subdomain in every environment and the
+// Reports go to dmarcReportingAddress. Since 2026-10-13 that is dmarc@rvintake.com,
+// a role alias on the apex mailbox (Ownership Boundaries §4.4), inside the intake
+// zone, so no authorization record is needed and the logic below yields nothing.
+// It stays for the case of an address on another organizational domain (as
+// support@arnolddigitalsolutions.com was from #608 until then). RFC 7489 §7.1 then
+// applies: before sending, a receiver looks up
+// <policy-domain>._report._dmarc.<rua-domain> for a TXT "v=DMARC1", and a
+// conforming one drops the report if it is missing. Those records belong in the
+// other domain's zone, which this template does not manage, so it computes their
+// exact names and prints them in the dmarcReportAuthorizationAction output, the
+// same way other out-of-band steps are surfaced. Any policy domain whose record
+// carries this rua needs one: the sending subdomain in every environment and the
 // rvintake.com apex in prod.
 //
 // One explicit record per policy domain, not a *._report._dmarc wildcard. A
@@ -844,8 +851,8 @@ module swaManager 'modules/static-web-app.bicep' = if (deploySwa) {
 // No customer-facing hostname lives here: the Manager SWA moved to the intake
 // zone in #632, so every host a human reads is on rvintake.com. What remains is
 // the API origin (#633) — an XHR target, seen in devtools and a CSP, not on a
-// sticker. The DMARC rua mailbox is not here either: it has been on
-// arnolddigitalsolutions.com since #608.
+// sticker. The DMARC rua mailbox is not here either: it is dmarc@rvintake.com,
+// on the intake apex mailbox (Ownership Boundaries §4.4).
 //
 // Only the CNAME and asuid TXT are declared. The hostname binding and managed
 // certificate are out-of-band, one-time, per environment: see the apiCnameRecords
@@ -927,14 +934,20 @@ module dnsApi 'modules/dns.bicep' = if (deploySwa && deployDns) {
 // tenant-wide rather than per-environment, so unlike every other record here both
 // environments write the same name and value.
 
-// Mail posture for the intake APEX (#652). The apex sends no mail: the packet
-// email goes out From mail.rvintake.com (prod) / mail-staging.rvintake.com
-// (staging), and each of those has its own _dmarc record above. Without SPF and
-// DMARC here, anyone could forge From: anything@rvintake.com (the brand customers
-// actually see) and a receiver would have nothing to check it against.
-// rvserviceflow.com got the same treatment in #651.
+// Mail posture for the intake APEX (#652). The packet email goes out From
+// mail.rvintake.com (prod) / mail-staging.rvintake.com (staging), and each of
+// those has its own _dmarc record above. The apex itself carries only the RV
+// Intake role-alias mailbox (support@, azure@, … — Ownership Boundaries §4.4),
+// hosted on Microsoft 365 from GoDaddy once intakeApexM365MailExchange is set.
+// Without SPF and DMARC here, anyone could forge From: anything@rvintake.com (the
+// brand customers actually see) and a receiver would have nothing to check it
+// against. rvserviceflow.com got the same treatment in #651.
 //
-//   SPF "-all" with no mechanisms: no host is authorised to send as the apex.
+//   SPF: "include:spf.protection.outlook.com -all" while the mailbox is on, so
+//     only Microsoft 365 may send as the apex; "-all" with no mechanisms when it
+//     is off. GoDaddy's setup suggests include:secureserver.net instead, which
+//     also authorises GoDaddy's shared hosting ranges. Microsoft 365 is the only
+//     sender here, so the narrower include is used.
 //   DMARC p=reject; sp=reject: act on failures, for the apex and for every
 //     subdomain that lacks a _dmarc record of its own.
 //
@@ -952,14 +965,15 @@ module dnsApi 'modules/dns.bicep' = if (deploySwa && deployDns) {
 // sp= is written out even though reject is also what it would inherit from p=,
 // so the choice is visible here and not left to a default.
 //
-// Null MX and rua (#608). DMARC reports go to dmarcReportingAddress on another
-// domain, so nothing needs to receive mail at rvintake.com. The null MX (RFC 7505:
-// preference 0, exchange ".") says so, and a sender fails at once instead of
-// retrying for days. The rua lets the apex report forgery attempts, and does the
-// same for any subdomain without its own record. It needs its own §7.1
-// authorization record, which is listed in dmarcReportAuthorizationAction.
-// Replace the null MX with a real exchanger only if mailboxes are ever added at
-// rvintake.com.
+// MX and rua (#608). With intakeApexM365MailExchange empty, nothing receives mail
+// at rvintake.com and the apex publishes a null MX (RFC 7505: preference 0,
+// exchange "."), so a sender fails at once instead of retrying for days. With it
+// set, the MX points at Microsoft 365 and autodiscover.rvintake.com is published
+// for mail clients. The rua lets the apex report forgery attempts, and does the
+// same for any subdomain without its own record. With dmarcReportingAddress on
+// rvintake.com itself (dmarc@, delivered to the apex mailbox) no §7.1
+// authorization record is needed; if it ever moves to another domain, the records
+// are listed in dmarcReportAuthorizationAction.
 //
 // Prod deploy only, like the apex ALIAS: staging writes into this same zone and
 // never touches "@". The SPF string shares the apex TXT record-set with the SWA
@@ -968,11 +982,21 @@ module dnsApi 'modules/dns.bicep' = if (deploySwa && deployDns) {
 // cannot re-assert the token never removes it. DMARC and MX live in their own
 // record-sets, so they have no such dependency.
 var intakeApexIsManaged = environmentName == 'prod'
+var intakeApexHasMailbox = intakeApexIsManaged && !empty(intakeApexM365MailExchange)
 
 var intakeApexSpfTxtRecords = (intakeApexIsManaged && !empty(intakeApexValidationToken)) ? [
   {
     name: '@'
-    values: [ intakeApexValidationToken, 'v=spf1 -all' ]
+    values: concat(
+      [ intakeApexValidationToken, intakeApexHasMailbox ? 'v=spf1 include:spf.protection.outlook.com -all' : 'v=spf1 -all' ],
+      empty(intakeApexMailVerificationToken) ? [] : [ intakeApexMailVerificationToken ])
+  }
+] : []
+
+var intakeApexMailCnameRecords = intakeApexHasMailbox ? [
+  {
+    name: 'autodiscover'
+    target: 'autodiscover.outlook.com'
   }
 ] : []
 
@@ -983,10 +1007,10 @@ var intakeApexDmarcTxtRecords = intakeApexIsManaged ? [
   }
 ] : []
 
-var intakeApexNullMxRecords = intakeApexIsManaged ? [
+var intakeApexMxRecords = intakeApexIsManaged ? [
   {
     name: '@'
-    records: [ { preference: 0, exchange: '.' } ]
+    records: [ { preference: 0, exchange: intakeApexHasMailbox ? intakeApexM365MailExchange : '.' } ]
   }
 ] : []
 
@@ -1001,7 +1025,7 @@ module dnsIntake 'modules/dns.bicep' = if (deploySwa && deployDns) {
         #disable-next-line BCP318
         target: swaIntake.outputs.defaultHostname
       }
-    ], managerCnameRecords, sendGridCnameRecords, redirectCnameRecords, auth0CnameRecords)
+    ], managerCnameRecords, sendGridCnameRecords, redirectCnameRecords, auth0CnameRecords, intakeApexMailCnameRecords)
     aRecords: environmentName == 'prod' ? [
       {
         name: '@'
@@ -1010,7 +1034,7 @@ module dnsIntake 'modules/dns.bicep' = if (deploySwa && deployDns) {
       }
     ] : []
     txtRecords: concat(mailSendingDmarcTxtRecords, redirectTxtRecords, intakeApexSpfTxtRecords, intakeApexDmarcTxtRecords)
-    mxRecords: intakeApexNullMxRecords
+    mxRecords: intakeApexMxRecords
   }
 }
 
