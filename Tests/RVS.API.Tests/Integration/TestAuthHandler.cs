@@ -20,7 +20,7 @@ namespace RVS.API.Tests.Integration;
 public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     public const string SchemeName = "IntegrationTest";
-    public const string TenantIdClaimType = "https://rvserviceflow.com/tenantId";
+    public const string TenantIdClaimType = "https://rvintake.com/tenantId";
     public const string AuthenticatedHeader = "X-Test-Authenticated";
     public const string TenantIdHeader = "X-Test-TenantId";
     public const string PermissionsHeader = "X-Test-Permissions";

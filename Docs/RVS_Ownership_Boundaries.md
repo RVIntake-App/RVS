@@ -222,20 +222,21 @@ Two notes:
 - **Personal access:** you keep admin access to everything through your own user, invited as an admin or member. The alias is the account's identity, not your sign-in, so at sale time you remove yourself and nothing breaks.
 - **Paperwork:** keep a private inventory of every account, its login alias, its billing owner and its recovery method, in the private ADS repo (under `ADS/products/rv-intake/`), not in this public repo. That inventory is the handover document.
 
-### 4.9 Decide what to do with `rvserviceflow.com` *(open)*
+### 4.9 Decide what to do with `rvserviceflow.com` *(decided October 15 2026: A, #900)*
 
-The entity plan keeps RVS as a marketing-only umbrella name, with its domain held by ADS for future use. RV Intake still depends on that domain in three places:
+The entity plan keeps RVS as a marketing-only umbrella name, with its domain held by ADS for future use. RV Intake depended on that domain in three places:
 
-- The API origin, `api.rvserviceflow.com` and `api-staging.rvserviceflow.com`. Browsers call it directly, so it has to resolve.
+- The API origin, `api.rvserviceflow.com` and `api-staging.rvserviceflow.com`. Browsers call it directly, so it had to resolve.
 - The Auth0 audience, `https://api.rvserviceflow.com`.
-- The claim namespace, `https://rvserviceflow.com/tenantId` and `/locationIds`, pinned in seven places plus the Auth0 Action.
+- The claim namespace, `https://rvserviceflow.com/tenantId` and `/locationIds`.
 
-The last two are opaque strings. A buyer could keep them without owning the domain, though it would look odd in due diligence. The API host is a real dependency. There are two ways out:
+There were two ways out: **A**, move all three to `rvintake.com` before launch, or **B**, keep them and agree that the domain goes with RV Intake in a sale, which contradicts the entity plan.
 
-- **A. Move the API to `api.rvintake.com` before launch** (the RV Intake Rename Plan). That means a new hostname alongside the old one, then Bicep parameters, the Blazor API base URLs and CORS, and a new Auth0 API with a new audience in the existing tenant. It's roughly an afternoon before launch and grows with every customer after. Then `rvserviceflow.com` is free to stay with ADS.
-- **B. Keep the API on `rvserviceflow.com`** and agree now that the domain goes with RV Intake in a sale. That contradicts the entity plan's use of RVS as an umbrella.
+**Decided: A.** #900 moves the API origin to `api.rvintake.com` / `api-staging.rvintake.com`, the audience to `https://api.rvintake.com`, and the claim namespace to `https://rvintake.com/`. It was done before go-live because G-5 deletes every test user, so no live token or grant depended on the old values and changing them cost nothing. After go-live, CLAUDE.md's rule applies: never change them again.
 
-**Recommendation:** A, done during G-5. Before go-live G-5 step 8 deletes every test user, so no live token or grant depends on the old audience and claim namespace, and changing them costs nothing. After go-live, CLAUDE.md's rule applies: never change them. If A happens, update CLAUDE.md's "Domains" table and its warning about the three opaque identifiers in the same change.
+**Cutover.** The code, Bicep and Auth0 baseline carry the new values. Staging cuts over first; prod cuts over inside the G-5 wipe, while the prod API is stopped. The sequence and the retirement of the old host are in the [Bicep README](ASOT/Infra/Bicep.IaC/README.md), "Move the API to `api.rvintake.com`". Mark this section done once both environments pass verification and the old `api*.rvserviceflow.com` host is retired.
+
+**`rvserviceflow.com` stays with ADS.** It is the corporate zone: a no-mail posture (null MX, SPF `-all`, DMARC `p=reject`) and no RV Intake host or identifier. The zone still sits in RV Intake's subscription; moving it to ADS is §4.6's note, and ADS's decision.
 
 ---
 

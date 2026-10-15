@@ -111,7 +111,7 @@ WASM workload is required for Blazor projects. CI installs it via `dotnet worklo
 
 ### Domains
 
-Two domains, split by audience rather than by app. **Every hostname a human reads is on `rvintake.com`**; `rvserviceflow.com` is corporate.
+**Every RV Intake host is on `rvintake.com`.** `rvserviceflow.com` is the RVS umbrella name and stays with ADS; RV Intake has no host or identifier on it (Ownership Boundaries §4.9, #900).
 
 | Host | Serves |
 | --- | --- |
@@ -119,13 +119,13 @@ Two domains, split by audience rather than by app. **Every hostname a human read
 | `manager.rvintake.com` / `manager-staging.rvintake.com` | Manager SWA |
 | `go.rvintake.com` / `go-staging.rvintake.com` | API redirect endpoint (Spec A-13) |
 | `mail.rvintake.com` / `mail-staging.rvintake.com` | Email sending domain (SendGrid) |
-| `api.rvserviceflow.com` / `api-staging.rvserviceflow.com` | API origin — XHR only, never typed |
+| `api.rvintake.com` / `api-staging.rvintake.com` | API origin — XHR and Twilio webhooks, never typed |
 
 The `RVS` acronym is unaffected: resource names, project names and document names all keep it.
 
-**Three things on `rvserviceflow.com` are opaque identifiers, not addresses — never change them to match a hostname:** the Auth0 audience `https://api.rvserviceflow.com`, the claim namespace `https://rvserviceflow.com/tenantId` / `/locationIds` (pinned in seven places plus the Auth0 Action), and `ErrorBaseUri` in `ExceptionHandlingMiddleware`. Changing the audience invalidates every token and grant; changing the namespace breaks claim extraction.
+**Three things are opaque identifiers, not addresses — never change them to match a hostname:** the Auth0 audience `https://api.rvintake.com`, the claim namespace `https://rvintake.com/tenantId` / `/locationIds` (defined once, in `ClaimsService`, plus the Auth0 Action), and `ErrorBaseUri` (`https://api.rvintake.com/errors`) in `ExceptionHandlingMiddleware`. Changing the audience invalidates every token and grant; changing the namespace breaks claim extraction. All three moved off `rvserviceflow.com` once, before go-live, when no live token or grant depended on them (#900). That was the one permitted change; there will not be another.
 
-`manager*.rvserviceflow.com` was retired September 17 2026 and does not resolve.
+`manager*.rvserviceflow.com` was retired September 17 2026 and does not resolve. `api*.rvserviceflow.com` is retired by #900 once the new host is verified.
 
 ### Request → Response Flow
 
@@ -154,7 +154,7 @@ Most containers partition on `/tenantId`. The exceptions are deliberate: `global
 
 ### Auth & Claims
 
-- Auth0 JWT Bearer, audience `https://api.rvserviceflow.com`.
+- Auth0 JWT Bearer, audience `https://api.rvintake.com`.
 - Authorization policies are **per-permission**, not per-role — e.g. `CanReadServiceRequests` requires claim `permissions:service-requests:read`. Full list in [RVS.API/Program.cs](RVS.API/Program.cs).
 - `ClaimsService` (scoped) owns claim constants and extraction. `GetTenantIdOrThrow()` throws `UnauthorizedAccessException` if missing.
 - `IUserContextAccessor` / `HttpUserContextAccessor` isolates services from `HttpContext` — services use `_userContext.UserId` for audit fields.

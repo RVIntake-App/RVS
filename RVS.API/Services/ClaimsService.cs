@@ -11,8 +11,10 @@ namespace RVS.API.Services;
 /// </summary>
 public sealed class ClaimsService
 {
-    public const string TenantIdClaimType = "https://rvserviceflow.com/tenantId";
-    public const string LocationIdsClaimType = "https://rvserviceflow.com/locationIds";
+    // The namespace the Auth0 Post-Login Action writes. The one home for both claim types:
+    // every other reader points here. Moved from rvserviceflow.com before go-live (#900).
+    public const string TenantIdClaimType = "https://rvintake.com/tenantId";
+    public const string LocationIdsClaimType = "https://rvintake.com/locationIds";
 
     /// <summary>The claim type Auth0 RBAC writes each granted permission to.</summary>
     public const string PermissionsClaimType = "permissions";

@@ -37,7 +37,7 @@ public class TwilioSmsNotificationServiceTests
         _twilio.Respond(HttpStatusCode.Created, $$"""{"sid":"{{MessageSid}}","status":"accepted"}""");
     }
 
-    private TwilioSmsNotificationService CreateService(bool enabled = true, string? webhookBaseUrl = "https://api-staging.rvserviceflow.com")
+    private TwilioSmsNotificationService CreateService(bool enabled = true, string? webhookBaseUrl = "https://api-staging.rvintake.com")
     {
         var httpClient = new HttpClient(_twilio) { BaseAddress = new Uri("https://api.twilio.com/") };
         return new TwilioSmsNotificationService(
@@ -104,7 +104,7 @@ public class TwilioSmsNotificationServiceTests
         await CreateService().SendSmsAsync(TenantId, LocationId, "+18015551234", "Hi");
 
         _twilio.Requests[0].Form["StatusCallback"].Should()
-            .Be("https://api-staging.rvserviceflow.com/api/events/twilio-sms/status");
+            .Be("https://api-staging.rvintake.com/api/events/twilio-sms/status");
     }
 
     [Fact]

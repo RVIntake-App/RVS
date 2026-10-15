@@ -18,7 +18,7 @@ param keyVaultName string
 param auth0Domain string
 
 @secure()
-@description('Auth0 API audience identifier (e.g. https://api.rvserviceflow.com).')
+@description('Auth0 API audience identifier (e.g. https://api.rvintake.com).')
 param auth0Audience string
 
 @secure()

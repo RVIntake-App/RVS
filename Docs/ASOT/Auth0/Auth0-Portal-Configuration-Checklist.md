@@ -119,7 +119,7 @@ Without the provisioner secrets the tool still opens, but every create reports t
 
 Moves the login URL from `dev-2jhzz8xmjggh26pm.us.auth0.com` to `login.rvintake.com`. A raw `.auth0.com` address in the browser bar is the biggest "this looks sketchy" tell for a service advisor signing in.
 
-`rvintake.com`, not `rvserviceflow.com` (#634): every hostname a human types, clicks or reads is on the intake brand, and the corporate domain keeps the API origin and the JWT claim namespace. Sign-in is the most visible surface there is.
+`rvintake.com`, not `rvserviceflow.com` (#634): every hostname a human types, clicks or reads is on the intake brand. Since #900 the API origin, the audience and the JWT claim namespace are there too, and RV Intake has nothing left on the corporate domain. Sign-in is the most visible surface there is.
 It also means login, the Manager app and the email sending domain all agree, so §8 has no brand mismatch to paper over — an earlier draft proposed a second sending domain for exactly that, and moving login here deleted the problem instead of funding it.
 
 **Status: §6–§8 are applied.** As of October 15 2026 `login.rvintake.com` is ready and the tenant default, Universal Login carries the Denim & Rust branding, and the email provider is SendGrid (§8.1); `auth0-apply.sh` checks all three. The steps below stay as the record and for a future per-environment tenant (#610).

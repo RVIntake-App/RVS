@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using RVS.Domain.DTOs;
+using RVS.API.Services;
 using RVS.Domain.Interfaces;
 using Microsoft.AspNetCore.Http;
 
@@ -43,7 +44,7 @@ public sealed class TenantAccessGateMiddleware
         }
 
         // TenantId comes from the namespaced JWT claim set by the Auth0 Post-Login Action
-        var tenantId = ctx.User.FindFirst("https://rvserviceflow.com/tenantId")?.Value;
+        var tenantId = ctx.User.FindFirst(ClaimsService.TenantIdClaimType)?.Value;
 
         if (string.IsNullOrWhiteSpace(tenantId))
         {

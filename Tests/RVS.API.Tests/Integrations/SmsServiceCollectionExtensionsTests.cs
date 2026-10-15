@@ -112,13 +112,13 @@ public class SmsServiceCollectionExtensionsTests
         using var provider = Build(useMocks: false, new()
         {
             ["Twilio:AuthToken"] = "token",
-            ["Twilio:WebhookBaseUrl"] = "https://api.rvserviceflow.com",
+            ["Twilio:WebhookBaseUrl"] = "https://api.rvintake.com",
         });
 
         var twilio = provider.GetRequiredService<IOptions<TwilioOptions>>().Value;
 
         twilio.AuthToken.Should().Be("token");
-        twilio.WebhookBaseUrl.Should().Be("https://api.rvserviceflow.com");
+        twilio.WebhookBaseUrl.Should().Be("https://api.rvintake.com");
     }
 
     [Fact]

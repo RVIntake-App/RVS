@@ -25,7 +25,7 @@ public sealed class TenantAccessGateMiddlewareTests
 
     private HttpContext CreateAuthenticatedContext(string path, string tenantId = "t1")
     {
-        var claims = new[] { new Claim("https://rvserviceflow.com/tenantId", tenantId) };
+        var claims = new[] { new Claim("https://rvintake.com/tenantId", tenantId) };
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var context = new DefaultHttpContext
         {

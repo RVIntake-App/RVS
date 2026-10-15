@@ -33,7 +33,7 @@ public sealed class ExceptionHandlingMiddlewareTests
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
         context.Response.ContentType.Should().Contain("application/problem+json");
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/validation");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/validation");
         problem.Title.Should().Be("Bad Request");
         problem.Status.Should().Be(400);
         problem.Detail.Should().Be("Invalid parameter");
@@ -50,7 +50,7 @@ public sealed class ExceptionHandlingMiddlewareTests
 
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/unauthorized");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/unauthorized");
         problem.Title.Should().Be("Unauthorized");
         problem.Status.Should().Be(401);
         problem.Detail.Should().Be("Tenant identifier is missing.");
@@ -67,7 +67,7 @@ public sealed class ExceptionHandlingMiddlewareTests
 
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status404NotFound);
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/not-found");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/not-found");
         problem.Title.Should().Be("Resource not found");
         problem.Status.Should().Be(404);
         problem.Detail.Should().Be("Service request not found.");
@@ -85,7 +85,7 @@ public sealed class ExceptionHandlingMiddlewareTests
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status410Gone);
         context.Response.ContentType.Should().Contain("application/problem+json");
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/token-expired");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/token-expired");
         problem.Title.Should().Be("Gone");
         problem.Status.Should().Be(410);
         problem.Detail.Should().Be("Magic-link token has expired.");
@@ -103,7 +103,7 @@ public sealed class ExceptionHandlingMiddlewareTests
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status410Gone);
         context.Response.ContentType.Should().Contain("application/problem+json");
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/intake-expired");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/intake-expired");
         problem.Title.Should().Be("Gone");
         problem.Status.Should().Be(410);
         problem.Detail.Should().Be("This location isn't accepting online service requests right now.");
@@ -120,7 +120,7 @@ public sealed class ExceptionHandlingMiddlewareTests
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status409Conflict);
         context.Response.ContentType.Should().Contain("application/problem+json");
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/conflict");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/conflict");
         problem.Title.Should().Be("Conflict");
         problem.Status.Should().Be(409);
         problem.Detail.Should().Be("Slug 'nova-hurricane' is already in use.");
@@ -137,7 +137,7 @@ public sealed class ExceptionHandlingMiddlewareTests
 
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status429TooManyRequests);
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/rate-limited");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/rate-limited");
         problem.Title.Should().Be("Too Many Requests");
         problem.Status.Should().Be(429);
         problem.Detail.Should().Be("You've sent the most invites allowed in an hour.");
@@ -153,7 +153,7 @@ public sealed class ExceptionHandlingMiddlewareTests
 
         var problem = await DeserializeProblemDetails(context);
         context.Response.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
-        problem.Type.Should().Be("https://api.rvserviceflow.com/errors/internal-server-error");
+        problem.Type.Should().Be("https://api.rvintake.com/errors/internal-server-error");
         problem.Title.Should().Be("Internal Server Error");
         problem.Status.Should().Be(500);
         problem.Detail.Should().Be("Something went wrong");

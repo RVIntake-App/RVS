@@ -9,11 +9,15 @@ Only the Manager app authenticates. **The intake app is anonymous and must stay 
 
 ## Tenant model
 
-Auth0 tenant `dev-2jhzz8xmjggh26pm.us.auth0.com`, API audience `https://api.rvserviceflow.com`, custom claim namespace `https://rvserviceflow.com/`.
+Auth0 tenant `dev-2jhzz8xmjggh26pm.us.auth0.com`, API audience `https://api.rvintake.com`, custom claim namespace `https://rvintake.com/`.
 
 **Sign-in is served from the custom domain `login.rvintake.com`** (#627, #634), and that is the `iss` of every token: both apps' `Auth0:Authority` and both vaults' `Auth0--Domain` name it. The tenant above is still the tenant — it is where the Management API lives, so `AUTH0_DOMAIN` in `Infra/Auth0/tenants/shared.env` and the `Auth0Mgmt--*` / `Auth0Provisioner--*` secrets all stay on it, and `AUTH0_APP_AUTHORITY` carries the browser-facing value instead. The canonical host also keeps serving: Auth0 stamps `iss` from whichever host handled the request, which is what makes the two coexist and makes a rollback a configuration change rather than a migration.
 
-> Both of those are **opaque identifiers**, not addresses to resolve. Since `#633` the API is also *served* at `api.rvserviceflow.com`, and since `#634` the claim namespace is the only other thing on that domain — but neither is coupled to the hostname. Changing the audience invalidates every issued token and every grant; changing the namespace breaks claim extraction in seven places. Moving a hostname is not a reason to touch either. The user-facing brand moved to `rvintake.com`; these did not, and should not.
+> Both of those are **opaque identifiers**, not addresses to resolve. The API is also *served* at `api.rvintake.com`, but neither value is coupled to the hostname. Changing the audience invalidates every issued token and every grant; changing the namespace breaks claim extraction. Moving a hostname is not a reason to touch either.
+>
+> **They moved once, deliberately, before go-live** (#900, Ownership Boundaries §4.9). Both were on `rvserviceflow.com` (`https://api.rvserviceflow.com`, `https://rvserviceflow.com/`). ADS keeps that domain as the RVS umbrella name, so RV Intake could not keep depending on it. The move was free only because the G-5 wipe deletes every test user and no live token or grant existed. That window is closed once the first pilot user signs in.
+>
+> **During the cutover** the tenant held both APIs, and the Post-Login Action wrote every claim under both namespaces, because one shared tenant serves environments that switch on separate deploys. Once staging and prod both pass verification, delete the old API and the Action's `legacyNamespace` lines. The namespace is defined once in the API, in `ClaimsService`; every other reader points at its constants.
 
 **One Auth0 tenant serves development, staging and production** (#610). A second tenant needs a paid Auth0 plan, so the split is deferred until usage justifies the cost. The accepted risks: any Auth0 change reaches every environment at once, and a test account carrying a real dealer's `tenantId` can sign in to the production Manager app and see that dealer's data. Test accounts must use test-only `tenantId` values. The tenant holds nothing but RV Intake (cleared October 15 2026, Ownership Boundaries §4.7): what `Infra/Auth0/baseline/` declares, plus the `rvs-config-automation` and `RVS API Provisioner` Management API applications.
 
@@ -88,7 +92,7 @@ Services never touch `HttpContext`. `IUserContextAccessor` lives in Domain and e
 
 ## Manager app authentication
 
-Auth0 OIDC with PKCE. `AddOidcAuthentication`, `ResponseType = "code"`, scopes `openid profile email offline_access`, audience `https://api.rvserviceflow.com`. The bearer token is attached by `AuthorizationMessageHandler` on the named `RVS.API` client.
+Auth0 OIDC with PKCE. `AddOidcAuthentication`, `ResponseType = "code"`, scopes `openid profile email offline_access`, audience `https://api.rvintake.com`. The bearer token is attached by `AuthorizationMessageHandler` on the named `RVS.API` client.
 
 A custom `RefreshingAccessTokenProvider` decorates `IAccessTokenProvider` and exchanges refresh tokens directly against Auth0's `/oauth/token`, rather than relying on iframe silent renewal. The app-wide `FallbackPolicy` requires an authenticated user; only `/` and `/authentication/{action}` are anonymous.
 

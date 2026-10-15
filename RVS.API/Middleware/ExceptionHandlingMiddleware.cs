@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using RVS.API.Services;
 using RVS.Domain.Exceptions;
 
 namespace RVS.API.Middleware;
@@ -14,8 +15,8 @@ public sealed class ExceptionHandlingMiddleware : IMiddleware
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
     private readonly IWebHostEnvironment _env;
 
-    private const string ErrorBaseUri = "https://api.rvserviceflow.com/errors";
-    private const string TenantIdClaimType = "https://rvserviceflow.com/tenantId";
+    private const string ErrorBaseUri = "https://api.rvintake.com/errors";
+    private const string TenantIdClaimType = ClaimsService.TenantIdClaimType;
 
     public ExceptionHandlingMiddleware(
         ILogger<ExceptionHandlingMiddleware> logger,

@@ -156,8 +156,9 @@ param swaSkuName = 'Free'
 // DNS — Manager: CNAME manager.rvintake.com, bound by Bicep (#632).
 //       Intake:  ALIAS A record at the rvintake.com apex → Intake SWA, written by
 //                Bicep; the apex *binding* is the one-time out-of-band step above.
-//       rvserviceflow.com is kept as the corporate zone — no customer-facing host,
-//                but it holds the API origin (#633).
+//       API:     CNAME api.rvintake.com (#900; was api.rvserviceflow.com, #633).
+//       rvserviceflow.com is kept as the corporate zone, mail posture only — it
+//                stays with ADS (Ownership Boundaries §4.9).
 param deployDns = true
 
 // The apex TXT record-set holds this token (from the one-time apex registration)

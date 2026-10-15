@@ -34,7 +34,7 @@ public sealed class TwilioOptions
     public string MessagingServiceSid { get; set; } = string.Empty;
 
     /// <summary>
-    /// The public origin Twilio calls back on, e.g. <c>https://api.rvserviceflow.com</c>. It is
+    /// The public origin Twilio calls back on, e.g. <c>https://api.rvintake.com</c>. It is
     /// configured rather than read from the request because App Service terminates TLS in front
     /// of the app, and Twilio signs the exact URL it called. Also builds each send's
     /// <c>StatusCallback</c>.

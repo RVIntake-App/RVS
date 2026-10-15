@@ -20,7 +20,7 @@ namespace RVS.API.Tests.Controllers;
 public class TwilioSmsWebhookControllerTests
 {
     private const string AuthToken = "twilio-auth-token";
-    private const string BaseUrl = "https://api-staging.rvserviceflow.com";
+    private const string BaseUrl = "https://api-staging.rvintake.com";
     private const string Phone = "+18015551234";
     private const string MessageSid = "SMcccccccccccccccccccccccccccccccc";
 
