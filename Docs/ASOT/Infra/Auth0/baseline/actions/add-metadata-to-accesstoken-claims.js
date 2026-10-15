@@ -11,11 +11,6 @@ exports.onExecutePostLogin = async (event, api) => {
     // RVS.API reads tenantId and locationIds under this namespace (ClaimsService). Moved from
     // https://rvserviceflow.com/ before go-live (#900).
     const namespace = 'https://rvintake.com/';
-    // CUTOVER ONLY (#900): the tenant is shared, so this Action serves every environment at
-    // once, but each environment's API moves to the new namespace on its own deploy. Until prod
-    // runs the new code, write every claim under the old namespace too. Delete this line and
-    // the setLegacy calls below once staging and prod both pass verification.
-    const legacyNamespace = 'https://rvserviceflow.com/';
     const roleClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
 
     // Using template literals for cleaner strings
@@ -24,9 +19,6 @@ exports.onExecutePostLogin = async (event, api) => {
     const orgNameClaim = `${namespace}orgName`;
     const regionTagClaim = `${namespace}regionTag`;
     // const userIdClaim = `${namespace}userId`;
-
-    // CUTOVER ONLY (#900): mirror a namespaced claim under legacyNamespace.
-    const setLegacy = (token, claim, value) => token.setCustomClaim(claim.replace(namespace, legacyNamespace), value);
 
     // Extract values using helper functions
     const tenantId = findTenantId();
@@ -42,10 +34,6 @@ exports.onExecutePostLogin = async (event, api) => {
     api.accessToken.setCustomClaim(orgNameClaim, orgName);
     api.accessToken.setCustomClaim(regionTagClaim, regionTag);
     // api.accessToken.setCustomClaim(userIdClaim, event.user.user_id);
-    setLegacy(api.accessToken, tenantIdClaim, tenantId);
-    setLegacy(api.accessToken, locationIdsClaim, locationIds);
-    setLegacy(api.accessToken, orgNameClaim, orgName);
-    setLegacy(api.accessToken, regionTagClaim, regionTag);
 
     // Set claims: id_token
     api.idToken.setCustomClaim(tenantIdClaim, tenantId)
@@ -53,10 +41,6 @@ exports.onExecutePostLogin = async (event, api) => {
     api.idToken.setCustomClaim(orgNameClaim, orgName)
     api.idToken.setCustomClaim(regionTagClaim, regionTag)
     // api.idToken.setCustomClaim(userIdClaim, event.user.user_id)
-    setLegacy(api.idToken, tenantIdClaim, tenantId);
-    setLegacy(api.idToken, locationIdsClaim, locationIds);
-    setLegacy(api.idToken, orgNameClaim, orgName);
-    setLegacy(api.idToken, regionTagClaim, regionTag);
 
     // --- Helper Functions ---
 

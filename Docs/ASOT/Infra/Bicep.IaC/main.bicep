@@ -687,10 +687,9 @@ var redirectTxtRecords = deployAppService ? [
 // umbrella name (Ownership Boundaries §4.9): RV Intake must not depend on a domain that does not
 // go with it. The redirect host above fronts the same Web App from this zone too.
 //
-// The old api(-<env>).rvserviceflow.com records are no longer declared. Incremental deployments
-// leave undeclared record sets in place, so they keep resolving until they are unbound and
-// deleted by hand once the new host is verified — README.md "Retire the api.rvserviceflow.com
-// host".
+// The old api(-<env>).rvserviceflow.com bindings and records were removed by hand on
+// October 15 2026, once both environments verified — README.md "Move the API to
+// api.rvintake.com".
 //
 // Same split as the redirect host: the CNAME and the "asuid" ownership TXT are declared here
 // (the site supplies customDomainVerificationId itself, so neither needs a human), but the

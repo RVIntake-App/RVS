@@ -443,7 +443,7 @@ the same Web App.
 
 It was first bound as `api.rvserviceflow.com` in the corporate zone (`#633`).
 `#900` moved it, with the Auth0 audience and the claim namespace, before
-go-live — see "Move the API to `api.rvintake.com`" below for the sequence.
+go-live — see "Move the API to `api.rvintake.com`" below.
 **The audience value matches this hostname, but they are not coupled**:
 changing the audience invalidates every issued token and grant.
 
@@ -499,16 +499,18 @@ curl -sS "https://$API_HOST/health"
 ```
 
 The App Service answers on this host and `go.<intake zone>`, plus its default
-hostname. Until the retirement steps below run, it also answers on the old
-`api*.rvserviceflow.com` name.
+hostname.
 
 The `apiHostBindingAction` deployment output repeats this reminder after every
 deploy; once the host answers over HTTPS, ignore it.
 
 ### Move the API to `api.rvintake.com` (`#900`)
 
-One-time, before the first pilot user signs in. It moves three things off
-`rvserviceflow.com`, which stays with ADS (Ownership Boundaries §4.9):
+> **Done — both environments, October 15 2026.** The API origin, the Auth0
+> audience and the claim namespace are on `rvintake.com`, and
+> `api*.rvserviceflow.com` is unbound, its certificates and records deleted.
+> Kept as the record of how it was done. Never repeat it: once live tokens
+> exist, changing the audience or the namespace breaks every one of them.
 
 | | Was | Now |
 | --- | --- | --- |
@@ -516,87 +518,29 @@ One-time, before the first pilot user signs in. It moves three things off
 | Auth0 audience | `https://api.rvserviceflow.com` | `https://api.rvintake.com` |
 | Claim namespace | `https://rvserviceflow.com/` | `https://rvintake.com/` |
 
-The code, Bicep and Auth0 baseline all carry the new values. What follows is
-the order to apply them. Staging goes first, and prod runs inside the G-5 wipe
-([RVS_GoLive_Activities.md](../../../RVS_GoLive_Activities.md#g-5-wipe-sequence)),
-while the prod API is stopped.
+`rvserviceflow.com` stays with ADS as the RVS umbrella name (Ownership
+Boundaries §4.9); RV Intake has nothing left in it.
 
-The order is set by two constraints. First, the Auth0 tenant is shared, so a
-change there reaches every environment at once. That change is therefore made
-additive: a second API beside the old one, and an Action that writes both
-namespaces. Second, the API's audience comes from the vault secret
-`Auth0--Audience`, not from the build, so it has to switch at the moment the
-Manager build that asks for the new audience lands.
+How the cutover ran, because the Auth0 tenant is shared and each
+environment switched on its own deploy:
 
-**Once, tenant-wide (any time before staging):**
-
-1. In the Auth0 dashboard, rename the old API (`https://api.rvserviceflow.com`)
-   to `RV Intake API (rvserviceflow, retiring)`, so the two are told apart.
-2. Run `Docs/ASOT/Infra/Auth0/auth0-apply.sh shared`, review the plan, then run
-   it again with `--apply`. It creates `https://api.rvintake.com` with the
-   baseline permissions, adds them to the roles, grants the API to the Manager
-   SPA, and deploys the Post-Login Action that writes both namespaces. The old
-   API is listed as unmanaged and left alone. Nothing running breaks, because
-   every environment still asks for the old audience and still finds the old
-   namespace.
-
-**Staging:**
-
-3. Deploy `main.bicep` with `staging.bicepparam` from this change. It writes
-   `api-staging` CNAME and `asuid.api-staging` TXT into `rvintake.com`, and sets
-   `Twilio__WebhookBaseUrl` to `https://api-staging.rvintake.com`. The old
-   records are not deleted (incremental mode).
-4. Bind the host and issue its certificate: "Bind the `api.<zone>` host" above.
-5. In the staging Twilio subaccount, set the Messaging Service's incoming-message
-   and status-callback URLs to the new host (`deployment-cmds.azcli` §4e (3)).
-   Between steps 3 and 5, inbound texts fail their signature check, because the
-   URL Twilio called no longer matches the configured base.
-6. Merge. `deploy-staging.yml` ships Intake and Manager builds that call the new
-   host, and a Manager that asks for the new audience.
-7. As soon as the deploy finishes, switch the staging API's audience and restart
-   it. Until then, Manager sign-ins on staging get 401s.
-
-   ```bash
-   az keyvault secret set --vault-name kv-rvs-staging-wus3 \
-     --name Auth0--Audience --value 'https://api.rvintake.com'
-   az webapp restart -n app-rvs-api-staging-wus3 -g rg-rvs-staging-westus3
-   ```
-
-8. Verify (below).
-
-**Prod, during G-5:**
-
-9. G-5 step 9's redeploy of `main.bicep` with `prod.bicepparam`, from this
-   change, writes the `api` CNAME and `asuid.api` TXT. Right after it, switch
-   the prod vault's audience. The API is still stopped, so it picks the new
-   value up when it starts in G-5 step 10.
-
-   ```bash
-   az keyvault secret set --vault-name kv-rvs-prod-wus3 \
-     --name Auth0--Audience --value 'https://api.rvintake.com'
-   ```
-
-10. Bind `api.rvintake.com` and issue its certificate (above). The API is
-    stopped, so its last check, `curl …/health`, waits for G-5 step 10.
-11. Run `deploy-production.yml` to promote the build staging verified in step 8.
-12. Carry on with G-5 step 10. Prod has no Twilio number until G-4, and G-4's
-    setup uses the new host.
-13. Verify (below), as part of G-5 step 11.
-
-**Verify, per environment:**
-
-- An Intake submit succeeds, and devtools shows the call going to the new host.
-- Manager signs in and loads requests. Decode the bearer token on any API call
-  (jwt.ms): `aud` includes `https://api.rvintake.com`, and the token carries
-  `https://rvintake.com/tenantId`.
-- Twilio (staging): the `curl` in `deployment-cmds.azcli` §4e (3) step 5
-  returns 403 against the new host, and a real STOP from a test phone is logged
-  as accepted, not as a signature failure.
-
-### Retire the `api.rvserviceflow.com` host (`#900`)
-
-Run this once staging **and** prod both pass verification. Until then the
-old names are the rollback path.
+1. **Auth0, tenant-wide and additive.** The old API was renamed
+   `RV Intake API (rvserviceflow, retiring)`. `auth0-apply.sh` then created
+   `https://api.rvintake.com` beside it, with role permissions and the
+   Manager grant, and deployed a Post-Login Action that wrote every claim
+   under both namespaces. Nothing running noticed.
+2. **Per environment, staging then prod.**
+   1. A Bicep deploy wrote the `api` CNAME and `asuid` TXT into
+      `rvintake.com` and set `Twilio__WebhookBaseUrl`.
+   2. The host was bound and its certificate issued, per "Bind the
+      `api.<zone>` host" above.
+   3. The new build was shipped: merge for staging, `deploy-production.yml`
+      for prod.
+   4. Right after that, `Auth0--Audience` was set in the vault and the API
+      restarted. The vault secret is not written by a param-file-only
+      deploy.
+3. **Retirement**, once both environments had verified a token carrying
+   `aud` `https://api.rvintake.com` and `https://rvintake.com/tenantId`:
 
 ```bash
 for ENV in staging prod; do
@@ -606,32 +550,18 @@ for ENV in staging prod; do
     APP=app-rvs-api-staging-wus3; RG=rg-rvs-staging-westus3; LABEL=api-staging
   fi
   OLD="$LABEL.rvserviceflow.com"
-
-  # 1. Unbind the old hostname, then delete its managed certificate
   az webapp config hostname delete --webapp-name "$APP" -g "$RG" --hostname "$OLD"
   az resource delete --resource-type Microsoft.Web/certificates -n "$OLD" -g "$RG"
-
-  # 2. Delete the records Bicep no longer declares
-  az network dns record-set cname delete --yes \
-    -g rg-rvs-prod-westus3 -z rvserviceflow.com -n "$LABEL"
-  az network dns record-set txt delete --yes \
-    -g rg-rvs-prod-westus3 -z rvserviceflow.com -n "asuid.$LABEL"
-
-  # 3. Confirm both names are gone — each must print nothing
-  dig +short "$OLD"; dig +short TXT "asuid.$OLD"
+  az network dns record-set cname delete --yes -g rg-rvs-prod-westus3 -z rvserviceflow.com -n "$LABEL"
+  az network dns record-set txt delete --yes -g rg-rvs-prod-westus3 -z rvserviceflow.com -n "asuid.$LABEL"
 done
 ```
 
-Then, tenant-wide:
+   Then the Action's dual-namespace lines were removed and re-applied, and
+   the old API was deleted in the Auth0 dashboard.
 
-- In the Auth0 dashboard, delete the old API, `https://api.rvserviceflow.com`.
-  Deleting it also removes its permissions from the roles and its grant.
-- In `Docs/ASOT/Infra/Auth0/baseline/actions/add-metadata-to-accesstoken-claims.js`,
-  delete `legacyNamespace`, `setLegacy` and its calls, then run `auth0-apply.sh`
-  again. Tokens stop carrying the old claims.
-
-After that, `rvserviceflow.com` carries only its mail posture, and RV Intake
-depends on nothing in it.
+Twilio needed nothing: no Messaging Service existed yet, and the G-4 setup
+in `deployment-cmds.azcli` §4e (3) uses the new host.
 
 ### Retire the old Manager host (`#632`)
 
