@@ -307,7 +307,7 @@ In the manager app, open **Locations** and edit a location. The drawer has a **S
 
 - [ ] Open `manager.rvintake.com`. Sign-in goes to the Auth0 page at `login.rvintake.com`, branded for RV Intake, not a generic Auth0 page.
 - [ ] `manager.rvserviceflow.com` does not resolve.
-- [ ] (#900) In devtools, the Manager's API calls go to `api.rvintake.com` (staging: `api-staging.rvintake.com`). Paste the bearer token into jwt.ms: `aud` includes `https://api.rvintake.com`, and it carries `https://rvintake.com/tenantId`. Once the old host is retired, `api.rvserviceflow.com` does not resolve.
+- [ ] (#900) In devtools, the Manager's API calls go to `api.rvintake.com` (staging: `api-staging.rvintake.com`). Paste the bearer token into jwt.ms: `aud` includes `https://api.rvintake.com`, and it carries `https://rvintake.com/tenantId`. `api.rvserviceflow.com` and `api-staging.rvserviceflow.com` do not resolve.
 - [ ] After the first sign-in on a device, you are asked **Keep me signed in on this device**. Answer **Yes**. Close the browser, come back the next day, and you are still signed in.
 - [ ] In the profile menu, change *Keep me signed in* to **Off**. The next time the app opens, it asks you to sign in. The warning about shared computers shows only under **On**.
 - [ ] Sign out. It finishes within a few seconds and never hangs.

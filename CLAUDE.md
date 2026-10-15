@@ -125,7 +125,7 @@ The `RVS` acronym is unaffected: resource names, project names and document name
 
 **Three things are opaque identifiers, not addresses — never change them to match a hostname:** the Auth0 audience `https://api.rvintake.com`, the claim namespace `https://rvintake.com/tenantId` / `/locationIds` (defined once, in `ClaimsService`, plus the Auth0 Action), and `ErrorBaseUri` (`https://api.rvintake.com/errors`) in `ExceptionHandlingMiddleware`. Changing the audience invalidates every token and grant; changing the namespace breaks claim extraction. All three moved off `rvserviceflow.com` once, before go-live, when no live token or grant depended on them (#900). That was the one permitted change; there will not be another.
 
-`manager*.rvserviceflow.com` was retired September 17 2026 and does not resolve. `api*.rvserviceflow.com` is retired by #900 once the new host is verified.
+`manager*.rvserviceflow.com` (retired September 17 2026) and `api*.rvserviceflow.com` (retired October 15 2026) do not resolve.
 
 ### Request → Response Flow
 

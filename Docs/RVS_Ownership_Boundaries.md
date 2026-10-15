@@ -182,7 +182,7 @@ The tenant already holds only RV Intake, so the directory change, the redeploy i
 3. **Billing** *(deferred until ADS's RV Intake bank account exists, §4.1)*. If the subscription is a Visual Studio or MSDN credit subscription (§5), it has to move to pay-as-you-go before anything else. Then create a billing account (Microsoft Customer Agreement) in ADS's name, paid from the RV Intake bank account or card (§4.1), and **transfer billing ownership** of the subscription to it. Resources, names and Azure OpenAI quota stay as they are. Strictly, this is about clean books, not the handover: billing transfers to a buyer from any account type. But it keeps RV Intake's costs off your personal invoices.
 4. **Keep the tenant RV Intake-only.** Plover and any other product get their own tenant (§6). Don't add their subscriptions, app registrations or groups here.
 
-**The `rvserviceflow.com` DNS zone** sits in the RVS resource group today. If ADS keeps that domain (§4.9), move its zone to an ADS subscription once nothing of RV Intake's resolves through it.
+**The `rvserviceflow.com` DNS zone** sits in the RVS resource group today. ADS keeps that domain, and since October 15 2026 nothing of RV Intake's resolves through it (§4.9), so the zone can move to an ADS subscription whenever ADS has one. Remove it from `main.bicep` (`corporateZoneName`, `dnsCorporate`, `dnsCorporateRbac`) in the same change.
 
 **When:** any time. None of this needs G-5.
 
@@ -222,7 +222,7 @@ Two notes:
 - **Personal access:** you keep admin access to everything through your own user, invited as an admin or member. The alias is the account's identity, not your sign-in, so at sale time you remove yourself and nothing breaks.
 - **Paperwork:** keep a private inventory of every account, its login alias, its billing owner and its recovery method, in the private ADS repo (under `ADS/products/rv-intake/`), not in this public repo. That inventory is the handover document.
 
-### 4.9 Decide what to do with `rvserviceflow.com` *(decided October 15 2026: A, #900)*
+### 4.9 Decide what to do with `rvserviceflow.com` *(done October 15 2026: A, #900)*
 
 The entity plan keeps RVS as a marketing-only umbrella name, with its domain held by ADS for future use. RV Intake depended on that domain in three places:
 
@@ -232,9 +232,9 @@ The entity plan keeps RVS as a marketing-only umbrella name, with its domain hel
 
 There were two ways out: **A**, move all three to `rvintake.com` before launch, or **B**, keep them and agree that the domain goes with RV Intake in a sale, which contradicts the entity plan.
 
-**Decided: A.** #900 moves the API origin to `api.rvintake.com` / `api-staging.rvintake.com`, the audience to `https://api.rvintake.com`, and the claim namespace to `https://rvintake.com/`. It was done before go-live because G-5 deletes every test user, so no live token or grant depended on the old values and changing them cost nothing. After go-live, CLAUDE.md's rule applies: never change them again.
+**Done: A.** #900 moved the API origin to `api.rvintake.com` / `api-staging.rvintake.com`, the audience to `https://api.rvintake.com`, and the claim namespace to `https://rvintake.com/`. It was done before go-live because G-5 deletes every test user, so no live token or grant depended on the old values and changing them cost nothing. After go-live, CLAUDE.md's rule applies: never change them again.
 
-**Cutover.** The code, Bicep and Auth0 baseline carry the new values. Staging cuts over first; prod cuts over inside the G-5 wipe, while the prod API is stopped. The sequence and the retirement of the old host are in the [Bicep README](ASOT/Infra/Bicep.IaC/README.md), "Move the API to `api.rvintake.com`". Mark this section done once both environments pass verification and the old `api*.rvserviceflow.com` host is retired.
+**Cutover.** Staging and then prod cut over on October 15 2026, ahead of G-5 rather than inside it. The old `api*.rvserviceflow.com` host, its records and the old Auth0 API were removed the same day. The sequence is recorded in the [Bicep README](ASOT/Infra/Bicep.IaC/README.md), "Move the API to `api.rvintake.com`".
 
 **`rvserviceflow.com` stays with ADS.** It is the corporate zone: a no-mail posture (null MX, SPF `-all`, DMARC `p=reject`) and no RV Intake host or identifier. The zone still sits in RV Intake's subscription; moving it to ADS is §4.6's note, and ADS's decision.
 
