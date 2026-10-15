@@ -72,4 +72,4 @@ Common edits:
 ## Known state worth knowing
 
 - The `dealer:technician` role and the `analytics:read` permission are archived scope. They stay in the baseline because they exist live; remove them as part of the descope. `service-requests:update-service-event` was removed from the baseline in #457; the next apply drops it from the RVS API and every RVS role.
-- Swagger UI has no sign-in. The Swagger SPA Client was removed from the baseline on October 15 2026: its grant carried no permissions, so its tokens could reach no protected endpoint, and the API was publishing its client secret in the public `/swagger/index.js`. Delete the live application and the `google-oauth2` connection it used in the dashboard; the scripts never delete.
+- Swagger UI has no sign-in. The Swagger SPA Client was removed from the baseline on October 15 2026: its grant carried no permissions, so its tokens could reach no protected endpoint, and the API was publishing its client secret in the public `/swagger/index.js`. The live application and the `google-oauth2` connection it used were deleted in the dashboard the same day (#899); the scripts never delete, so that was by hand.
