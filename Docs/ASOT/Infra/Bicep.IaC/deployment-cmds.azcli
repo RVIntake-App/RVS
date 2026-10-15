@@ -56,10 +56,12 @@ TENANT_ID=$(az account show --query tenantId -o tsv)
 az account set --subscription "$SUBSCRIPTION_ID"
 
 # ── Well-known identifiers (stable; used by Section 4) ────────────────────────
-GITHUB_REPO="markarnoldutah/RVS"
+GITHUB_REPO="RVIntake-App/RVS"
 
 # GitHub Actions OIDC deployer service principal (staging + prod, Option A in
 # PROD_DEPLOYER_SP_SETUP.md). Display name: github-actions-rvs-deployment
+# Its federated-credential subjects carry the org and repo IDs (the repo's OIDC
+# subject template uses immutable IDs): repo:RVIntake-App@341154614/RVS@1176179645:environment:<env>
 DEPLOYER_APP_ID="de5714f8-924a-4761-b278-9e7a94f2d116"          # app/client id
 DEPLOYER_SP_OBJECT_ID="9b1e460a-6bed-418a-9d65-1bbed1f768a9"    # enterprise-app object id
 
@@ -293,7 +295,7 @@ az ad app federated-credential create \
   --parameters '{
     "name": "github-actions-production",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:markarnoldutah/RVS:environment:production",
+    "subject": "repo:RVIntake-App@341154614/RVS@1176179645:environment:production",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 
@@ -653,10 +655,12 @@ az staticwebapp secrets list --name stapp-rvs-intake-staging \
 az staticwebapp secrets list --name stapp-rvs-manager-staging \
   --resource-group rg-rvs-staging-westus2 --query "properties.apiKey" -o tsv
 
-gh secret set INTAKE_SWA_TOKEN_STAGING --env staging --repo "$GITHUB_REPO" --body "$(
+# The staging tokens are repository secrets (no --env); the production tokens
+# are `production` environment secrets.
+gh secret set INTAKE_SWA_TOKEN_STAGING --repo "$GITHUB_REPO" --body "$(
   az staticwebapp secrets list --name stapp-rvs-intake-staging \
     --resource-group rg-rvs-staging-westus2 --query 'properties.apiKey' -o tsv)"
-gh secret set MANAGER_SWA_TOKEN_STAGING --env staging --repo "$GITHUB_REPO" --body "$(
+gh secret set MANAGER_SWA_TOKEN_STAGING --repo "$GITHUB_REPO" --body "$(
   az staticwebapp secrets list --name stapp-rvs-manager-staging \
     --resource-group rg-rvs-staging-westus2 --query 'properties.apiKey' -o tsv)"
 

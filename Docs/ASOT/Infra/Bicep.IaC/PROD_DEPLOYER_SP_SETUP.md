@@ -22,7 +22,17 @@ You have two reasonable choices:
 | **A. Reuse the existing staging SP** (`github-actions-rvs-deployment`, app id `de5714f8-924a-4761-b278-9e7a94f2d116`) | Single-engineer or small-team setup; you trust one SP to deploy both envs | Just **one** entry — already populated in the param files |
 | **B. Create a separate production SP** | Multi-team / SOC2 / blast-radius isolation; you want prod creds rotated independently | **Two** entries — staging SP + new prod SP |
 
-The current param files reflect **Option A**. Steps below cover both.
+**Option A is in use:** one app registration, `github-actions-rvs-deployment`,
+holds both federated credentials (`github-actions-staging` and
+`github-actions-production`), and both GitHub environments carry its client ID.
+Option B was never set up. Steps below cover both.
+
+**Subjects use the org and repo IDs.** The repo is `RVIntake-App/RVS`, and its
+OIDC subject template uses immutable IDs, so a credential's subject is
+`repo:RVIntake-App@341154614/RVS@1176179645:environment:<env>`. A subject
+without the `@` IDs never matches and the Azure login fails. In the portal's
+federated-credential form, fill in **Organization ID** and **Repository ID** and
+check that **Subject identifier** shows the `@` form before saving.
 
 ---
 
@@ -30,7 +40,7 @@ The current param files reflect **Option A**. Steps below cover both.
 
 ### A.1 Add a federated credential for the production environment
 
-The existing app registration is wired for `repo:…:environment:staging`. Add a
+The existing app registration is wired for `repo:…/RVS@…:environment:staging`. Add a
 second federated credential so the same SP can also assume tokens issued by the
 GitHub `production` environment.
 
@@ -42,7 +52,7 @@ az ad app federated-credential create \
   --parameters '{
     "name": "github-actions-production",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:markarnoldutah/RVS:environment:production",
+    "subject": "repo:RVIntake-App@341154614/RVS@1176179645:environment:production",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 ```
@@ -58,9 +68,9 @@ You should see:
 
 ```
 Name                       Subject
--------------------------  ------------------------------------------------
-github-actions-staging     repo:markarnoldutah/RVS:environment:staging
-github-actions-production  repo:markarnoldutah/RVS:environment:production
+-------------------------  ------------------------------------------------------------------
+github-actions-staging     repo:RVIntake-App@341154614/RVS@1176179645:environment:staging
+github-actions-production  repo:RVIntake-App@341154614/RVS@1176179645:environment:production
 ```
 
 ### A.2 Grant Contributor on the production resource groups
@@ -100,7 +110,7 @@ az role assignment create \
 
 In **GitHub → Settings → Environments → New environment** (name: `production`):
 
-- **Required reviewers**: enable for manual approval (recommended).
+- **Required reviewers**: not set. `deploy-production.yml` runs only by manual trigger, and the trigger is the approval.
 - **Variables**:
   - `AZURE_CLIENT_ID` = `de5714f8-924a-4761-b278-9e7a94f2d116`
   - `AZURE_TENANT_ID` = `<your tenant id>` (`az account show --query tenantId -o tsv`)
@@ -156,7 +166,7 @@ az ad app federated-credential create \
   --parameters '{
     "name": "github-actions-production",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:markarnoldutah/RVS:environment:production",
+    "subject": "repo:RVIntake-App@341154614/RVS@1176179645:environment:production",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 ```

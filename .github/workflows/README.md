@@ -70,11 +70,20 @@ The workflow rejects `branch: main` with a fast-fail error and directs you to us
 | Resource          | Auth mechanism     | Stored as                  | Needed in           |
 | ----------------- | ------------------ | -------------------------- | ------------------- |
 | API (App Service) | Azure OIDC (RBAC)  | GitHub environment **vars** | staging, production |
-| Intake SWA        | SWA deployment token | GitHub environment **secrets** | staging, production |
-| Manager SWA       | SWA deployment token | GitHub environment **secrets** | staging, production |
+| Intake SWA        | SWA deployment token | GitHub **secrets** (staging: repository; production: environment) | staging, production |
+| Manager SWA       | SWA deployment token | GitHub **secrets** (staging: repository; production: environment) | staging, production |
 
 - **OIDC** = no long-lived secrets. GitHub requests a short-lived token from Azure AD each run.
-  Requires an Entra ID app registration with federated credentials.
+  Requires an Entra ID app registration with federated credentials. One app registration,
+  `github-actions-rvs-deployment`, holds both: `github-actions-staging` and
+  `github-actions-production`.
+- **The OIDC subject carries the org and repo IDs.** The repo lives in the `RVIntake-App`
+  organization, whose OIDC subject template uses immutable IDs, so each token's subject is
+  `repo:RVIntake-App@341154614/RVS@1176179645:environment:<env>`, not
+  `repo:RVIntake-App/RVS:environment:<env>`. Check the template with
+  `gh api repos/RVIntake-App/RVS/actions/oidc/customization/sub`. The IDs survive a rename of
+  the org or repo; a transfer to another org changes them, and every federated credential
+  must then be edited in the same sitting or the Azure login fails.
 - **SWA tokens** = long-lived API keys retrieved once from Azure and stored as GitHub secrets.
   No OIDC or Azure login required for SWA deployments.
 
@@ -93,7 +102,10 @@ The workflow rejects `branch: main` with a fast-fail error and directs you to us
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID (GUID)             |
 | `API_APP_SERVICE_NAME`  | App Service name (e.g. `rvs-api-staging`) |
 
-#### Secrets (Settings → Environments → staging → Secrets)
+#### Secrets (Settings → Secrets and variables → Actions → Repository secrets)
+
+The staging SWA tokens are **repository** secrets, not `staging` environment secrets, so the
+`staging` environment itself lists none. Every job can read them.
 
 | Secret                       | Value                        |
 | ---------------------------- | ---------------------------- |
@@ -160,7 +172,7 @@ az ad app federated-credential create \
   --parameters '{
     "name": "github-actions-production",
     "issuer": "https://token.actions.githubusercontent.com",
-    "subject": "repo:markarnoldutah/RVS:environment:production",
+    "subject": "repo:RVIntake-App@341154614/RVS@1176179645:environment:production",
     "audiences": ["api://AzureADTokenExchange"]
   }'
 ```
@@ -203,7 +215,9 @@ az staticwebapp secrets list \
 ### 5. Create the GitHub Production Environment
 
 1. Go to **Settings → Environments → New environment** → name: `production`
-2. Recommended: enable **Required reviewers** for manual approval before production deploys
+2. Required reviewers: not set. `deploy-production.yml` runs only by manual trigger, and the
+   trigger is the approval. (`staging` does require a reviewer: `markarnoldutah` or
+   `rvintake-gh`, either one.)
 3. Add **Variables** (from Section "Production Variables" above):
    - `AZURE_CLIENT_ID` = `$APP_ID`
    - `AZURE_TENANT_ID` = `$TENANT_ID`
@@ -221,8 +235,8 @@ az ad app federated-credential list --id "$APP_ID" \
   --query '[].{name:name, subject:subject}' -o table
 
 # Should show:
-# github-actions-staging      repo:markarnoldutah/RVS:environment:staging
-# github-actions-production   repo:markarnoldutah/RVS:environment:production
+# github-actions-staging      repo:RVIntake-App@341154614/RVS@1176179645:environment:staging
+# github-actions-production   repo:RVIntake-App@341154614/RVS@1176179645:environment:production
 
 # Confirm role assignments
 az role assignment list --assignee "$APP_ID" \

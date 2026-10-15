@@ -1,7 +1,7 @@
 # RVS — Ownership Boundaries
 
-**Version:** 1.4 · October 13, 2026 (§4.4 done: role-alias mail on the `rvintake.com` apex, in Microsoft 365 from GoDaddy, because GoDaddy can't host a subdomain mailbox)
-**Status:** Action plan. The legal owner is decided (§4.1) and the role-alias mail is live (§4.4). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
+**Version:** 1.5 · October 14, 2026 (§4.5 done: `RVS` moved to the `RVIntake-App` GitHub organization; OIDC subjects now carry the org and repo IDs)
+**Status:** Action plan. The legal owner is decided (§4.1), the role-alias mail is live (§4.4) and the repo is in its own GitHub organization (§4.5). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
 
 The goal: **RV Intake can be handed to a new owner as a single unit.** Every account, tenant, domain, trademark and contract it depends on should belong to RV Intake and nothing else, so that a sale is a handover, not a migration project.
 
@@ -89,7 +89,7 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Auth0** | One tenant (#610). It also holds Benefetch, ManagersFriend, RVMTP and other apps, all obsolete and to be deleted. | None once they're gone: the tenant is RV Intake's alone and hands over by changing its admins. The admin login still needs to be the `auth0@` alias. | §4.7 |
 | **Azure tenant** | **Confirmed:** one tenant, created with `markarnoldutah@gmail.com`, holding one subscription with only RV Intake resources. | No directory change needed. The open point is admin access: if the personal Microsoft account is the only Global Admin, the tenant can't be handed over cleanly. | §4.6 |
 | **Azure billing** | The only subscription in the tenant, so the bill carries nothing but RV Intake. Offer type and billing-account owner: to confirm (§5). Probably an individual account in your name, since the tenant was created with a personal Microsoft account. | A Visual Studio credit subscription can't go to a buyer at all. A pay-as-you-go account in your own name works at sale time, since billing transfers painlessly (§1), but it invoices you rather than ADS. | §4.6 |
-| **GitHub** | Personal account `markarnoldutah/RVS`. OIDC subjects are `repo:markarnoldutah/RVS:environment:*`. | You can't hand over a personal account. Moving the repo changes the OIDC subject, which breaks deploys. | §4.5 |
+| **GitHub** | **Done (§4.5):** `RVIntake-App/RVS`, in an organization owned by `rvintake-gh` (`github@`) and your personal account. OIDC subjects are `repo:RVIntake-App@341154614/RVS@1176179645:environment:*`. | None. A sale adds the buyer as an org owner; the IDs, and so the subjects, don't change. | §4.5 |
 | **Ops and DMARC email** | **Done (§4.4):** `ops@rvintake.com` and `dmarc@rvintake.com`, role aliases on the product's own domain. No DMARC records live outside Azure any more. | None. | §4.4 |
 | **Customer contact** | `support@arnolddigitalsolutions.com` in `SiteIdentity.cs`, the contact the Twilio toll-free verification (#659) will name. | Same, plus it's tied to the carrier filing. | §4.4 / §4.8 |
 | **SendGrid, Twilio** | One account each. Owner login and any sharing with other products: to confirm. | Login emails need to be product aliases, and the accounts must not be shared. | §4.8 |
@@ -149,18 +149,15 @@ Every account login and operational address is a role alias on the product's own
 - **`support@` in `SiteIdentity.cs`** stays `support@arnolddigitalsolutions.com` until it changes together with the toll-free filing (§4.1, §4.8).
 - **The private account inventory** (§4.8, "Paperwork") records the GoDaddy account, its recovery methods and the setup history in the ADS repo.
 
-### 4.5 Create the GitHub organization and transfer the repo
+### 4.5 Create the GitHub organization and transfer the repo *(done October 14 2026)*
 
-Create an organization owned by `github@` (§4.4), with your personal account as an owner, and transfer `RVS` into it. Don't put any other product's repos in it. GitHub redirects the old URL, and issues, PRs and Actions history come along. After the transfer, check that the `staging` and `production` environments still have their variables and secrets, including both SWA deployment tokens.
+`RVS` lives in the `RVIntake-App` organization, owned by `rvintake-gh` (login `github@`, §4.4) and by your personal account, which is the owner you can remove. Don't put any other product's repos in it. GitHub redirects the old `markarnoldutah/RVS` URL, and issues, PRs and Actions history came along. The environments came through intact: `staging` and `production` each have the four variables, `production` has its two SWA tokens, and the two staging SWA tokens are repository secrets. Either `markarnoldutah` or `rvintake-gh` can approve a staging deploy; production has no required reviewer, since it runs only by manual trigger.
 
 **Only transfer code ADS can sell.** Nothing in the repo may depend on code that can't be licensed or transferred to a buyer, such as a private package shared with another product.
 
-**This breaks deploys until the federated credentials are updated**, because the OIDC subject includes the owner. In the same sitting, edit the subject on each federated credential of the two deployer app registrations to `repo:<org>/RVS:environment:*` (`PROD_DEPLOYER_SP_SETUP.md`). The app registrations, client IDs and GitHub environment variables stay as they are. Then update the repo's references to `markarnoldutah/RVS`:
+**The OIDC subject carries the org and repo IDs.** The organization's subject template uses immutable IDs, so the subjects are `repo:RVIntake-App@341154614/RVS@1176179645:environment:staging` and `…:environment:production`, both on the one deployer app registration, `github-actions-rvs-deployment` (Option A in `PROD_DEPLOYER_SP_SETUP.md`). A subject without the IDs never matches. The client ID and the GitHub environment variables didn't change. Staging deploy #356 and production deploy #17 both signed in to Azure from the new org.
 
-- `.github/workflows/README.md`
-- `Docs/ASOT/Infra/Bicep.IaC/PROD_DEPLOYER_SP_SETUP.md`
-- `Docs/ASOT/Infra/Bicep.IaC/deployment-cmds.azcli` (`GITHUB_REPO`)
-- `.github/agents/github-issue-manager.agent.md`
+The IDs survive renaming the org or repo, and a sale hands over the org itself, so the subjects never change at sale. A transfer to a different org would change them and break deploys until each federated credential is edited, in the same sitting.
 
 The repo can stay public.
 

@@ -380,4 +380,4 @@ Three workflows in [.github/workflows](.github/workflows/) — detailed runbook 
 
 Both workflows invoke the suites through Microsoft.Testing.Platform (`dotnet test <csproj> --no-build -- <mtp flags>`). The `TestingPlatformDotnetTestSupport` switch lives in [Tests/Directory.Build.props](Tests/Directory.Build.props); without it `dotnet test` took the VSTest path, discovered nothing, and reported success (issue #560).
 
-Auth: API uses Azure OIDC (federated credentials, no long-lived secrets). Static Web Apps use long-lived deployment tokens stored as environment secrets.
+Auth: API uses Azure OIDC (federated credentials on one app registration, `github-actions-rvs-deployment`, no long-lived secrets). The repo is `RVIntake-App/RVS`, and its OIDC subjects carry the org and repo IDs: `repo:RVIntake-App@341154614/RVS@1176179645:environment:<env>`. Static Web Apps use long-lived deployment tokens: `production` environment secrets for prod, repository secrets for staging.
