@@ -157,6 +157,8 @@ Every account login and operational address is a role alias on the product's own
 
 **The OIDC subject carries the org and repo IDs.** The organization's subject template uses immutable IDs, so the subjects are `repo:RVIntake-App@341154614/RVS@1176179645:environment:staging` and `…:environment:production`, both on the one deployer app registration, `github-actions-rvs-deployment` (Option A in `PROD_DEPLOYER_SP_SETUP.md`). A subject without the IDs never matches. The client ID and the GitHub environment variables didn't change. Staging deploy #356 and production deploy #17 both signed in to Azure from the new org.
 
+**The project board stays on the personal account, by choice.** The RVS board (`users/markarnoldutah/projects/1`) belongs to an account, not the repo, so it didn't move. The issues did, and the board keeps working across the two owners. Handing the board to a buyer isn't required: the issues go with the repo. If it ever should go, `Tools/copy-project-board.sh` copies it into the org; order you set by hand within a column doesn't carry over.
+
 The IDs survive renaming the org or repo, and a sale hands over the org itself, so the subjects never change at sale. A transfer to a different org would change them and break deploys until each federated credential is edited, in the same sitting.
 
 The repo can stay public.
