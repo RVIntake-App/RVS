@@ -19,10 +19,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Http.Resilience;
-using Microsoft.OpenApi;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -178,10 +176,7 @@ builder.Services.AddControllers()
         };
     });
 
-builder.Services.AddOpenApi(options =>
-{
-    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-});
+builder.Services.AddOpenApi();
 
 // Rate limiting — protects the public intake + status endpoints. Partitioned per caller
 // IP (Spec X-5) so a single abusive client cannot exhaust the fixed window for everyone;
@@ -849,16 +844,9 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Staging"))
     {
         options.SwaggerEndpoint("/openapi/v1.json", "v1");
         options.DocumentTitle = "RVS API";
-        options.OAuthClientId(builder.Configuration["Auth0:ClientId"]);
-        options.OAuthClientSecret(builder.Configuration["Auth0:ClientSecret"]);
-        options.OAuthAppName("RVS API");
-        options.OAuthAdditionalQueryStringParams(new Dictionary<string, string>
-         {
-             { "audience", builder.Configuration["Auth0:Audience"] ?? "" }
-         });
-        options.OAuthScopes("openid", "profile");
-        options.OAuthUsePkce();
-        options.EnablePersistAuthorization();
+        // No sign-in: Swashbuckle writes OAuth settings into the public /swagger/index.js,
+        // and the Swagger SPA client's tokens carried no permissions anyway. Anonymous
+        // endpoints can be called from here; authenticated ones can't, for now.
     });
 }
 
@@ -894,54 +882,3 @@ app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();
-
-/// <summary>
-/// Document transformer to add OAuth2/JWT Bearer authentication to OpenAPI for SwaggerUI
-/// </summary>
-internal sealed class BearerSecuritySchemeTransformer(IAuthenticationSchemeProvider authenticationSchemeProvider) : IOpenApiDocumentTransformer
-{
-    public async Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
-    {
-        var authenticationSchemes = await authenticationSchemeProvider.GetAllSchemesAsync();
-        if (authenticationSchemes.Any(authScheme => authScheme.Name == "Bearer"))
-        {
-            // Add the security scheme at the document level
-            var securitySchemes = new Dictionary<string, IOpenApiSecurityScheme>
-            {
-                ["Bearer"] = new OpenApiSecurityScheme
-                {
-                    Type = SecuritySchemeType.OAuth2,
-                    Flows = new OpenApiOAuthFlows
-                    {
-                        Implicit = new OpenApiOAuthFlow
-                        {
-                            AuthorizationUrl = new Uri($"{context.ApplicationServices.GetRequiredService<IConfiguration>()["Auth0:Domain"]?.TrimEnd('/')}/authorize"),
-                            TokenUrl = new Uri($"{context.ApplicationServices.GetRequiredService<IConfiguration>()["Auth0:Domain"]?.TrimEnd('/')}/oauth/token"),
-                            Scopes = new Dictionary<string, string>
-                            {
-                                { "openid", "OpenID" },
-                                { "profile", "Profile" }
-                            }
-                        }
-                    },
-                    In = ParameterLocation.Header,
-                    Scheme = "bearer",
-                    BearerFormat = "JWT",
-                    Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token."
-                }
-            };
-            document.Components ??= new OpenApiComponents();
-            document.Components.SecuritySchemes = securitySchemes;
-
-            // Apply it as a requirement for all operations
-            foreach (var operation in document.Paths.Values.SelectMany(path => path.Operations))
-            {
-                operation.Value.Security ??= [];
-                operation.Value.Security.Add(new OpenApiSecurityRequirement
-                {
-                    [new OpenApiSecuritySchemeReference("Bearer", document)] = []
-                });
-            }
-        }
-    }
-}

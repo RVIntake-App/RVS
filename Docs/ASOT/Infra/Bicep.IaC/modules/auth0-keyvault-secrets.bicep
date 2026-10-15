@@ -22,14 +22,6 @@ param auth0Domain string
 param auth0Audience string
 
 @secure()
-@description('Auth0 application client ID.')
-param auth0ClientId string
-
-@secure()
-@description('Auth0 application client secret.')
-param auth0ClientSecret string
-
-@secure()
 @description('Auth0 token endpoint URL (e.g. https://rvs-dev.us.auth0.com/oauth/token).')
 param auth0TokenUrl string
 
@@ -86,24 +78,6 @@ resource auth0AudienceSecret 'Microsoft.KeyVault/vaults/secrets@2024-11-01' = {
   name: 'Auth0--Audience'
   properties: {
     value: auth0Audience
-    contentType: 'text/plain'
-  }
-}
-
-resource auth0ClientIdSecret 'Microsoft.KeyVault/vaults/secrets@2024-11-01' = {
-  parent: keyVault
-  name: 'Auth0--ClientId'
-  properties: {
-    value: auth0ClientId
-    contentType: 'text/plain'
-  }
-}
-
-resource auth0ClientSecretKv 'Microsoft.KeyVault/vaults/secrets@2024-11-01' = {
-  parent: keyVault
-  name: 'Auth0--ClientSecret'
-  properties: {
-    value: auth0ClientSecret
     contentType: 'text/plain'
   }
 }

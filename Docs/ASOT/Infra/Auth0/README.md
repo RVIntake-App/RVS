@@ -2,14 +2,14 @@
 
 Scripts that capture and change the RVS part of an Auth0 tenant. Anything declared in `baseline/` is owned by these scripts: a dashboard edit to it shows up as a difference on the next plan and is overwritten by the next apply.
 
-Development, staging and production currently share **one** tenant, `dev-2jhzz8xmjggh26pm.us.auth0.com` (#610). A change applied to it reaches all three environments at once. The tenant also hosts unrelated products' APIs, applications and Actions, which these scripts leave alone.
+Development, staging and production currently share **one** tenant, `dev-2jhzz8xmjggh26pm.us.auth0.com` (#610). A change applied to it reaches all three environments at once. The tenant holds nothing but RV Intake (cleared October 15 2026, `Docs/RVS_Ownership_Boundaries.md` §4.7): the baseline, plus the two Management API applications `rvs-config-automation` and `RVS API Provisioner`, which the plan lists as "not in the baseline" and which are expected.
 
 ## Files
 
 | Path | What it is |
 | --- | --- |
 | `tenants/<name>.env` | One file per Auth0 tenant: domain, where its Management API credentials live, and the environment-specific URLs. Today only `shared.env`; `_template.env` is the starting point for more. |
-| `baseline/` | Desired state for what RVS owns: the RVS API and its permissions, roles, the Manager and Swagger applications (with their API grants and connections), and the Post-Login Action source. Environment-agnostic; URLs come from the tenant file. |
+| `baseline/` | Desired state for what RVS owns: the RVS API and its permissions, roles, the Manager application (with its API grant and connection), and the Post-Login Action source. Environment-agnostic; URLs come from the tenant file. |
 | `auth0-apply.sh` | Compares a tenant with `baseline/` and, with `--apply`, makes it match. |
 | `auth0-export.sh` | Read-only snapshot of a whole tenant into `snapshots/<name>/`. For inspecting a tenant or finding drift outside the baseline; not a source of truth. |
 | `lib.sh` | Helpers shared by both scripts. |
@@ -45,17 +45,17 @@ Common edits:
 
 - Delete a resource. Removing a role or application from `baseline/` leaves it in the tenant; delete it in the dashboard. Within a managed resource the baseline is authoritative: a permission not in the baseline is removed from the RVS API, RVS roles and the Manager grant.
 - Touch users. Onboarding users (with `app_metadata`) is covered in the checklist and in `RVS_Identity.md`.
-- Manage tenant-wide settings (session lifetimes, attack protection, the Universal Login flow). While the tenant is shared with other products, most of those aren't RVS's to set. The exceptions RVS does set — the custom domain, the Friendly Name, the Universal Login branding and prompt text, and the email provider — are deliberate, done by hand, and written up in
-  [`../../Auth0/Auth0-Portal-Configuration-Checklist.md`](../../Auth0/Auth0-Portal-Configuration-Checklist.md) §6–§8. Each one reaches the other products in this tenant as well.
+- Manage tenant-wide settings (session lifetimes, attack protection, the Universal Login flow). They are set by hand when needed and aren't checked. The ones RVS does check — the custom domain, the Friendly Name, the Universal Login branding and prompt text, and the email provider — are deliberate, done by hand, and written up in
+  [`../../Auth0/Auth0-Portal-Configuration-Checklist.md`](../../Auth0/Auth0-Portal-Configuration-Checklist.md) §6–§8. Each one reaches development, staging and production at once.
 
-  The apply script **checks** most of them against the tenant file and reports drift. It never changes them, so a dashboard edit by anyone sharing the tenant shows up on the next plan:
+  The apply script **checks** most of them against the tenant file and reports drift. It never changes them, so a dashboard edit shows up on the next plan:
 
   | Setting | Expected value | Scope | If it drifts |
   | --- | --- | --- | --- |
   | Friendly Name | `AUTH0_EXPECT_FRIENDLY_NAME` | `read:tenant_settings` | The login card names something else |
   | Custom domain: ready, and the tenant default | the host in `AUTH0_APP_AUTHORITY` | `read:custom_domains` | `/admin` set-password links fall back to the canonical host |
   | Email provider and From address | `AUTH0_EXPECT_EMAIL_PROVIDER`, `AUTH0_EXPECT_EMAIL_FROM` | `read:email_provider` | Reset mail comes from `no-reply@auth0user.net`, or someone else's sender |
-  | Universal Login logo, favicon, primary colour, page background | `AUTH0_EXPECT_BRANDING_*` | `read:branding` | The login screen hands off to an app in a different palette — or shows an empty logo frame, which is what a URL Auth0 could not fetch looks like (#619) |
+  | Universal Login logo and favicon (`/branding`); primary button colour and page background (the default theme, or `/branding` when the tenant has none) | `AUTH0_EXPECT_BRANDING_*` | `read:branding` | The login screen hands off to an app in a different palette — or shows an empty logo frame, which is what a URL Auth0 could not fetch looks like (#619) |
   | The login widget's wording | `AUTH0_EXPECT_LOGIN_DESCRIPTION`, over the prompts in `AUTH0_EXPECT_LOGIN_PROMPTS` | `read:prompts` | Back to Auth0's default, "Log in to RV Intake to continue to RV Intake Manager" — one product named twice (#619) |
 
   An unset value skips its check. A missing scope skips its check with a warning, so a plan works before the scopes are granted.
@@ -72,4 +72,4 @@ Common edits:
 ## Known state worth knowing
 
 - The `dealer:technician` role and the `analytics:read` permission are archived scope. They stay in the baseline because they exist live; remove them as part of the descope. `service-requests:update-service-event` was removed from the baseline in #457; the next apply drops it from the RVS API and every RVS role.
-- The Swagger SPA Client's grant to the RVS API has no permissions, and the API only issues permissions an application is granted. Tokens from Swagger UI therefore carry none.
+- Swagger UI has no sign-in. The Swagger SPA Client was removed from the baseline on October 15 2026: its grant carried no permissions, so its tokens could reach no protected endpoint, and the API was publishing its client secret in the public `/swagger/index.js`. Delete the live application and the `google-oauth2` connection it used in the dashboard; the scripts never delete.

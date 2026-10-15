@@ -179,8 +179,6 @@ az deployment sub create \
   --parameters Docs/ASOT/Infra/Bicep.IaC/parameters/prod.bicepparam \
   --parameters auth0Domain='https://<tenant>.us.auth0.com/' \
                auth0Audience='https://api.rvserviceflow.com' \
-               auth0ClientId='<client id>' \
-               auth0ClientSecret='<client secret>' \
   --name "rvs-prod-${TS}"
 ```
 
@@ -190,7 +188,7 @@ az deployment sub create `
   --location westus3 `
   --template-file Docs/ASOT/Infra/Bicep.IaC/main.bicep `
   --parameters Docs/ASOT/Infra/Bicep.IaC/parameters/prod.bicepparam `
-  --parameters auth0Domain='https://<tenant>.us.auth0.com/' auth0Audience='https://api.rvserviceflow.com' auth0ClientId='<client id>' auth0ClientSecret='<client secret>' `
+  --parameters auth0Domain='https://<tenant>.us.auth0.com/' auth0Audience='https://api.rvserviceflow.com' `
   --name "rvs-prod-$ts"
 ```
 

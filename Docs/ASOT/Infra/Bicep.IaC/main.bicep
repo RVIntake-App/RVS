@@ -229,14 +229,6 @@ param auth0Domain string = ''
 param auth0Audience string = ''
 
 @secure()
-@description('Auth0 application client ID. Required when deployKeyVault = true.')
-param auth0ClientId string = ''
-
-@secure()
-@description('Auth0 application client secret. Required when deployKeyVault = true.')
-param auth0ClientSecret string = ''
-
-@secure()
 @description('Auth0 tenant domain for the "RVS API Provisioner" M2M app used by the platform-admin tool (issue #563). Optional; the Auth0Provisioner--* secrets are written only when domain, client ID and secret are all set.')
 param auth0ProvisionerDomain string = ''
 
@@ -796,8 +788,6 @@ module auth0KeyVaultSecrets 'modules/auth0-keyvault-secrets.bicep' = if (deployK
     keyVaultName: deployKeyVault ? keyVault.outputs.name : 'unused'
     auth0Domain: auth0Domain
     auth0Audience: auth0Audience
-    auth0ClientId: auth0ClientId
-    auth0ClientSecret: auth0ClientSecret
     auth0TokenUrl: '${auth0Domain}oauth/token'
     auth0AuthorizationUrl: '${auth0Domain}authorize'
     auth0ProvisionerDomain: auth0ProvisionerDomain

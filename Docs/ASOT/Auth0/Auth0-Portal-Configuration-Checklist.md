@@ -1,6 +1,6 @@
 # Auth0 Portal Configuration Checklist
 
-**Updated:** September 17, 2026
+**Updated:** October 15, 2026 (tenant cleared to RV Intake only; §7.2 for Auth0's reworked branding pages; §8 live on SendGrid)
 **Source:** [`../RVS_Identity.md`](../RVS_Identity.md), [`../Infra/Auth0/README.md`](../Infra/Auth0/README.md)
 
 The RVS API, permissions, roles, applications, grants, connections and Post-Login Action are **scripted**: they are declared in [`../Infra/Auth0/baseline/`](../Infra/Auth0/baseline/) and applied with `auth0-apply.sh`. Don't configure them in the dashboard; the next plan reports the edit as a difference and the next apply reverts it.
@@ -122,15 +122,15 @@ Moves the login URL from `dev-2jhzz8xmjggh26pm.us.auth0.com` to `login.rvintake.
 `rvintake.com`, not `rvserviceflow.com` (#634): every hostname a human types, clicks or reads is on the intake brand, and the corporate domain keeps the API origin and the JWT claim namespace. Sign-in is the most visible surface there is.
 It also means login, the Manager app and the email sending domain all agree, so §8 has no brand mismatch to paper over — an earlier draft proposed a second sending domain for exactly that, and moving login here deleted the problem instead of funding it.
 
-**Status: nothing in §6–§8 has been applied.** As of 2026-09-17 both apps authenticate against `dev-2jhzz8xmjggh26pm.us.auth0.com`, no Auth0 custom domain exists, and `auth0CustomDomainCnameTarget` in `main.bicep` is empty. §6.1–§6.4 and §7.1 can be done in daylight and change nothing for users; §6.5, §7.2 and §8 are the ones with consequences.
+**Status: §6–§8 are applied.** As of October 15 2026 `login.rvintake.com` is ready and the tenant default, Universal Login carries the Denim & Rust branding, and the email provider is SendGrid (§8.1); `auth0-apply.sh` checks all three. The steps below stay as the record and for a future per-environment tenant (#610).
 
-**Read this before you start.** The tenant is shared two ways, and the two consequences are not equally serious.
+**Read this before you start.** The tenant is shared across environments. Until October 15 2026 it also held unrelated products; it is now RV Intake-only (Ownership Boundaries §4.7), so the notes below about other products are history.
 
 - Development, staging and production all use it (#610). One custom domain serves all three; the Free plan includes exactly one, so there is no per-environment login domain. `login.rvintake.com` is the only hostname in the whole infrastructure with no `-staging` sibling — every `*DnsPrefix` parameter in `main.bicep` is environment-suffixed, and `auth0LoginDnsPrefix` deliberately is not.
-- The tenant also hosts unrelated products' applications ([`../Infra/Auth0/README.md`](../Infra/Auth0/README.md)). **Adding a custom domain does not move them.** The canonical `dev-2jhzz8xmjggh26pm.us.auth0.com` host keeps serving after the custom domain is live, and each application follows the authority its own configuration names — so only the apps cut over in §6.5 move.
+- **Adding a custom domain does not move an application.** The canonical `dev-2jhzz8xmjggh26pm.us.auth0.com` host keeps serving after the custom domain is live, and each application follows the authority its own configuration names — so only the apps cut over in §6.5 move.
   Auth0 stamps `iss` from whichever host handled the token request, which is why both keep working side by side.
 
-  What *is* unavoidably tenant-wide is **§7 branding** and **§8's email provider**: those two change what the other products' users see and who their mail comes from. Confirm that's acceptable before running §7 and §8. §6 on its own is additive and reversible.
+  What *is* tenant-wide is **§7 branding** and **§8's email provider**: they apply to every application and environment at once. §6 on its own is additive and reversible.
 
   The one thing that does not straddle the two hosts is a session. A user signed in at the canonical domain is not signed in at the custom domain. That, not the domain, is why everyone is logged out at cutover.
 
@@ -199,10 +199,7 @@ The default domain governs Auth0-generated notification links (password reset, e
 That second clause is the one that decides it. [`Auth0ManagementProvisioner.cs`](../../../RVS.API/Integrations/Auth0ManagementProvisioner.cs) calls `POST api/v2/tickets/password-change` and sends no such header — the string appears nowhere in the codebase. That ticket is the **set-password link a brand-new dealer clicks during onboarding** (#563, Spec P-1…P-8).
 Left on the canonical domain, the first URL a customer ever receives from RVS points at `dev-2jhzz8xmjggh26pm.us.auth0.com` — the precise failure §6 exists to prevent, at the moment there is least trust to spend. The alternative is passing the header on every such call, which is a code change; the default setting is free and covers every flow at once.
 
-**Shared-tenant consequence, stated plainly:** the other products in this tenant get `login.rvintake.com` in their notification links too. Narrower than it sounds — interactive login stays per-application, as the top of §6 explains — but it is a real RVS-brand leak, and each of those products can override per request with the `auth0-custom-domain` header if it ever matters.
-
-Decide it together with §8 rather than on its own. Once Auth0's email provider points at RVS's SendGrid sending domain, those same products' identity mail arrives *from* `DoNotReply@mail.rvintake.com`; a From address is a larger leak than a link. If the §8 footprint is acceptable, this is strictly smaller.
-If it is not, the answer is to split the tenant (#610), not to leave reset links on a raw `.auth0.com` host.
+Every application in the tenant gets `login.rvintake.com` in its notification links. While the tenant also held other products that was a brand leak; since §4.7 of the Ownership Boundaries cleared them, every application here is RV Intake's.
 
 **Verify both empirically, not by inspection.** The toggle and the default interact, and neither shows an error when wrong. Trigger a real password reset and read the link; then, separately, provision a user through `/admin` and read *that* link.
 They travel different code paths — the reset is Auth0's own notification, the ticket is the Management API path above — so one working does not prove the other.
@@ -259,7 +256,7 @@ Auth0--TokenUrl           https://dev-2jhzz8xmjggh26pm.us.auth0.comoauth/token
 Staging's are correct.
 The commands above overwrite both with well-formed values, which is the cheapest moment to fix it — but if you ever redeploy with the `auth0Domain` parameter, pass it **with** a trailing slash or the malformation comes back.
 
-`Auth0--AuthorizationUrl` and `Auth0--TokenUrl` are written by [`modules/auth0-keyvault-secrets.bicep`](../Infra/Bicep.IaC/modules/auth0-keyvault-secrets.bicep) and **nothing currently reads them** — Swagger derives both from `Auth0:Domain` at request time, via `.TrimEnd('/')`, which is why the prod malformation has never surfaced.
+`Auth0--AuthorizationUrl` and `Auth0--TokenUrl` are written by [`modules/auth0-keyvault-secrets.bicep`](../Infra/Bicep.IaC/modules/auth0-keyvault-secrets.bicep) and **nothing reads them**, which is why the prod malformation has never surfaced. Swagger UI used to derive both from `Auth0:Domain`; it has had no sign-in since October 15 2026.
 Set them anyway so a later `auth0Domain` redeploy doesn't reintroduce the canonical host, and so the next person reading the vault isn't misled.
 
 The alternative to the loop above is a redeploy with `--parameters auth0Domain=https://login.rvintake.com/ …`, which rewrites all three. That needs every other `auth0*` parameter supplied in the same command (the module is skipped entirely when `auth0Domain` is empty), so the `az keyvault secret set` route is usually less work.
@@ -311,8 +308,8 @@ A blank Auth0 screen with nothing in the network tab is the CSP. A successful lo
 
 ## 7. Universal Login branding (once per tenant)
 
-**Genuinely tenant-wide, unlike §6.** The custom domain is additive — the other products in this tenant keep using the canonical host until they choose to move. Branding is not: it changes the login, password-reset and MFA screens for every application in the tenant, including theirs, immediately.
-There is no per-application override, and the per-*customer* branded login that would give you one needs Organizations, which RVS permanently does not use (see "Not used"). Confirm that's acceptable before you touch it.
+**Genuinely tenant-wide, unlike §6.** The custom domain is additive — an application keeps using the canonical host until it is cut over. Branding is not: it changes the login, password-reset and MFA screens for every application in the tenant, in every environment, immediately.
+There is no per-application override, and the per-*customer* branded login that would give you one needs Organizations, which RVS permanently does not use (see "Not used").
 
 ### 7.1 Which logo
 
@@ -336,7 +333,13 @@ Do not point the URL at `manager.rvserviceflow.com`. It was retired on 2026-09-1
 ### 7.2 Set the branding
 
 1. **Confirm the New Universal Login experience.** **Branding → Universal Login**. The no-code customization below applies to the new experience; Classic is templated differently.
-2. **Branding → Universal Login → Customization**, and set:
+2. Set the values below. Auth0 reworked these pages in 2026 and split them in two:
+   - **The colours** are in the theme: **Branding → Universal Login → Update branding theme → Colors** (Primary button) and **Page** (background). Click **Save And Publish**. This is what the login screen renders, and what `auth0-apply.sh` checks.
+   - **The logo and favicon** are checked in the tenant's branding settings (the API's `/branding`), which the reworked page no longer shows as a form. If the dashboard offers no field for them, set them through the Management API: `PATCH /api/v2/branding` with `logo_url` and `favicon_url`, using a token from **Applications → APIs → Auth0 Management API → API Explorer**. The theme's **Widget** section has a logo of its own; keep it the same URL.
+
+   `/branding` also carries a `colors.primary` that the dashboard no longer shows. With a theme in place it is ignored, and the plan no longer reads it.
+
+   While in the theme, set **Base Focus Color** and **Links and focused components** to the same Rust as the button; Auth0's default is its own purple `#635dff`. The plan doesn't check these two.
 
    | Field | Value | Source |
    | --- | --- | --- |
@@ -357,16 +360,16 @@ Manager also carries a dark palette, and both apps carry a separate high-contras
 
 The login page also cannot reach the app's self-hosted Space Grotesk, so it renders in Auth0's default face. That is expected and not worth fixing on the Free plan; the colour and the logo are what carry continuity across the hand-off.
 
-Set all of it by hand: `auth0-apply.sh` deliberately doesn't apply tenant-wide settings. It does **check** them (#619) — the four fields above against `AUTH0_EXPECT_BRANDING_*` in `Docs/ASOT/Infra/Auth0/tenants/<tenant>.env`, and §7.3's wording against `AUTH0_EXPECT_LOGIN_DESCRIPTION` — so a dashboard edit by anyone sharing this tenant shows up on the next plan as a `!` line.
+Set all of it by hand: `auth0-apply.sh` deliberately doesn't apply tenant-wide settings. It does **check** them (#619) — the four fields above against `AUTH0_EXPECT_BRANDING_*` in `Docs/ASOT/Infra/Auth0/tenants/<tenant>.env`, and §7.3's wording against `AUTH0_EXPECT_LOGIN_DESCRIPTION` — so a dashboard edit shows up on the next plan as a `!` line.
 Changing a value here means changing the tenant file in the same commit, or the next plan reports your own change as drift.
 
 ### 7.3 The widget names the product twice
 
 Out of the box the login card reads **"Log in to RV Intake to continue to RV Intake Manager"** — Auth0's default description, `Log in to ${companyName} to continue to ${clientName}.`, filled in with the tenant Friendly Name from §6 and the application name. For one product whose two names differ by a word, that sentence is noise. It should read **"Log in to RV Intake Manager"** (#619).
 
-The fix is the prompt's custom text, not the Friendly Name — the Friendly Name is tenant-wide and other products' login screens use it too (and `auth0-apply.sh` checks it against `AUTH0_EXPECT_FRIENDLY_NAME`).
+The fix is the prompt's custom text, not the Friendly Name — the Friendly Name is tenant-wide and names the company, not the application (and `auth0-apply.sh` checks it against `AUTH0_EXPECT_FRIENDLY_NAME`).
 
-**Keep the `${clientName}` placeholder.** Custom text is as tenant-wide as everything else in §7: hard-coding "RV Intake Manager" would put RVS's product name on the other products' login screens. `Log in to ${clientName}` renders each application's own name.
+**Keep the `${clientName}` placeholder.** Custom text is as tenant-wide as everything else in §7: hard-coding "RV Intake Manager" would name the Manager on any other application's login screen, and a second one is likely when environments split (#610). `Log in to ${clientName}` renders each application's own name.
 
 Set it on three prompts. Which one a tenant renders depends on whether the login flow is identifier-first, and the flow can be changed later by anyone with dashboard access:
 
@@ -409,7 +412,7 @@ Then `./auth0-apply.sh shared` and expect three `= login text (...)` lines. The 
 
 This is the one that matters more than the watermark. Auth0's built-in sender sends from **`no-reply@auth0user.net`**, is capped at 10 messages/minute, and Auth0 documents it as not for production. A password-reset email arriving at a dealership from an unrecognised third-party domain is exactly the shape corporate mail filters flag.
 
-Unlike the watermark, this is **not** gated by the Auth0 plan — it's gated by plugging in your own provider. Tenant-wide, so §7's caveat applies: the other products in this tenant start sending their password-reset mail from an RVS address too.
+Unlike the watermark, this is **not** gated by the Auth0 plan — it's gated by plugging in your own provider. Tenant-wide, like §7: every environment's identity mail goes through it.
 
 ### 8.1 Use Auth0's native SendGrid integration
 
@@ -431,7 +434,7 @@ Consequence to accept deliberately: a developer resetting a password locally get
 2. **Branding → Email Provider.** Enable **Use my own email provider**, select **SendGrid**, paste the key, and set **From** to `DoNotReply@mail.rvintake.com`.
 3. **Save**, then **Send Test Email**. If nothing arrives within a few minutes, read the Auth0 tenant logs first, then SendGrid's **Activity** feed — a rejected key shows in Auth0, a blocked or bounced message in SendGrid.
 
-**Why a separate key.** It is a shared secret held by a third party from then on, alongside whatever other products use this tenant. Its own key means it can be revoked without touching the API's sends, and rotating the API's key cannot silently break password-reset mail. Whoever rotates keys needs to know this second one exists; it lives only in Auth0 and SendGrid.
+**Why a separate key.** It is a shared secret held by a third party from then on. Its own key means it can be revoked without touching the API's sends, and rotating the API's key cannot silently break password-reset mail. Whoever rotates keys needs to know this second one exists; it lives only in Auth0 and SendGrid.
 
 ### 8.2 Fallbacks, if 8.1 does not take
 
