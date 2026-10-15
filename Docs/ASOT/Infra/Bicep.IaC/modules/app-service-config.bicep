@@ -37,7 +37,7 @@ param smsFromPhoneNumber string = ''
 @description('Twilio Messaging Service SID (MG…). Not a secret. Leave empty to skip.')
 param twilioMessagingServiceSid string = ''
 
-@description('Public origin of the API (https://api.rvserviceflow.com). Twilio signs each webhook over the exact URL it called, and App Service terminates TLS in front of the app, so the API cannot rebuild that URL from the request. Leave empty to skip — the webhook then refuses every request.')
+@description('Public origin of the API (https://api.rvintake.com). Twilio signs each webhook over the exact URL it called, and App Service terminates TLS in front of the app, so the API cannot rebuild that URL from the request. Leave empty to skip — the webhook then refuses every request.')
 param twilioWebhookBaseUrl string = ''
 
 @description('Display name on the email From line. Leave empty to keep the API default from appsettings.json ("RV Intake"); staging sets "RV Intake [Staging]" so its mail is easy to tell apart (#828).')

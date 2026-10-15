@@ -143,10 +143,10 @@ param deployDns bool = false
 @description('Resource group that owns the DNS zones. Apex zones are shared across environments and owned by the prod RG.')
 param dnsResourceGroupName string = 'rg-rvs-prod-westus3'
 
-@description('Corporate DNS zone. Holds the API origin host (#633) and a no-mail posture (null MX, SPF -all, DMARC reject); no customer-facing hostname lives here. Formerly managerZoneName — the Manager SWA moved to the intake zone in #632.')
-param apiZoneName string = 'rvserviceflow.com'
+@description('Corporate DNS zone (the RVS umbrella name, which stays with ADS — Ownership Boundaries §4.9). Holds only a no-mail posture (null MX, SPF -all, DMARC reject); RV Intake has no host here. Formerly apiZoneName: the API origin moved to the intake zone in #900, as the Manager SWA did in #632.')
+param corporateZoneName string = 'rvserviceflow.com'
 
-@description('DNS zone for every customer-facing host: Intake (apex in prod, subdomain CNAME in non-prod envs), Manager, the channel-tagging redirect, the email sending domain and the Auth0 login host.')
+@description('DNS zone for every RV Intake host: Intake (apex in prod, subdomain CNAME in non-prod envs), Manager, the channel-tagging redirect, the API origin, the email sending domain and the Auth0 login host.')
 param intakeZoneName string = 'rvintake.com'
 
 @description('The Intake SWA apex validation token, minted once when the apex was registered out of band. Read it from the zone (`az network dns record-set txt show -z rvintake.com -n @`), not from `az staticwebapp hostname show`, whose validationToken reads blank once the apex is Ready. Prod only. It shares the apex TXT record-set with the SPF string (#652), and a deploy PUTs that whole set, so Bicep has to carry the token or it deletes it. Empty = the apex TXT record-set is not declared at all: no SPF, and nothing already in the zone is removed.')
@@ -167,7 +167,7 @@ param intakeDnsPrefix string = environmentName == 'prod' ? '' : environmentName
 @description('Subdomain prefix for the channel-tagging redirect host that fronts the API (Spec A-13, #599) — "go" in prod (go.rvintake.com), "go-<env>" elsewhere (go-staging.rvintake.com). A sibling label rather than a child of the Intake host, so each environment\'s redirect is independent and a single-label wildcard certificate is never needed.')
 param redirectDnsPrefix string = environmentName == 'prod' ? 'go' : 'go-${environmentName}'
 
-@description('Subdomain prefix for the API origin host in the corporate zone (#633) — "api" in prod (api.rvserviceflow.com), "api-<env>" elsewhere (api-staging.rvserviceflow.com). This is the origin the browser apps call; it is not customer-facing, which is why it stays on rvserviceflow.com while every host a human reads moved to rvintake.com. Note the Auth0 resource-server identifier is the same string, but that is an opaque audience value and unrelated — do not couple them.')
+@description('Subdomain prefix for the API origin host in the INTAKE zone — "api" in prod (api.rvintake.com), "api-<env>" elsewhere (api-staging.rvintake.com). The origin the browser apps and Twilio call. It was on rvserviceflow.com (#633) until #900 moved it, so that RV Intake depends on no host outside its own domain. Note the Auth0 resource-server identifier is the same string, but that is an opaque audience value and unrelated — do not couple them.')
 param apiDnsPrefix string = environmentName == 'prod' ? 'api' : 'api-${environmentName}'
 
 @description('Auth0 Universal Login host in the INTAKE zone (Auth0 checklist §6, #627). Deliberately NOT environment-suffixed, unlike every other prefix above: the Free plan includes exactly one custom domain and dev/staging/prod share one Auth0 tenant (#610), so there is a single login host serving all three. A subdomain is also forced — Auth0 does not support an apex custom domain, and the rvintake.com apex is the Intake SWA.')
@@ -225,7 +225,7 @@ param keyVaultNameOverride string = ''
 param auth0Domain string = ''
 
 @secure()
-@description('Auth0 API audience identifier (e.g. https://api.rvserviceflow.com). Required when deployKeyVault = true.')
+@description('Auth0 API audience identifier (e.g. https://api.rvintake.com). Required when deployKeyVault = true.')
 param auth0Audience string = ''
 
 @secure()
@@ -454,7 +454,7 @@ module appServiceConfig 'modules/app-service-config.bicep' = if (deployAppServic
     smsFromPhoneNumber: smsFromPhoneNumber
     twilioMessagingServiceSid: twilioMessagingServiceSid
     // Twilio signs each webhook over the URL it called, and calls back here.
-    twilioWebhookBaseUrl: 'https://${apiDnsPrefix}.${apiZoneName}'
+    twilioWebhookBaseUrl: 'https://${apiDnsPrefix}.${intakeZoneName}'
     configureStagingSlot: deployStagingSlot
   }
 }
@@ -679,15 +679,18 @@ var redirectTxtRecords = deployAppService ? [
   }
 ] : []
 
-// ── api.rvserviceflow.com — the API origin (#633) ─────────────
+// ── api.rvintake.com — the API origin (#633, #900) ─────────────
 //
-// Until this, api.rvserviceflow.com existed only as the Auth0 resource-server identifier: an
-// opaque audience string with no DNS behind it, while both Blazor apps called the API at its
-// *.azurewebsites.net default hostname. This binds the name for real.
+// The origin both Blazor apps call and Twilio posts its webhooks to. It was first bound in the
+// CORPORATE zone as api.rvserviceflow.com (#633), on the reasoning that nobody reads an XHR
+// origin. #900 moved it here, before go-live, because ADS keeps rvserviceflow.com as the RVS
+// umbrella name (Ownership Boundaries §4.9): RV Intake must not depend on a domain that does not
+// go with it. The redirect host above fronts the same Web App from this zone too.
 //
-// In the CORPORATE zone, unlike every other host: an XHR origin is not something a customer
-// reads. The redirect host above fronts the same Web App from the intake zone, because a link
-// on a QR sticker very much is.
+// The old api(-<env>).rvserviceflow.com records are no longer declared. Incremental deployments
+// leave undeclared record sets in place, so they keep resolving until they are unbound and
+// deleted by hand once the new host is verified — README.md "Retire the api.rvserviceflow.com
+// host".
 //
 // Same split as the redirect host: the CNAME and the "asuid" ownership TXT are declared here
 // (the site supplies customDomainVerificationId itself, so neither needs a human), but the
@@ -714,8 +717,7 @@ var apiTxtRecords = deployAppService ? [
 // ── manager.rvintake.com — the dealer-facing Manager SWA (#632) ────
 //
 // In the INTAKE zone, not the corporate one: a service advisor signs in here, so it carries the
-// brand every other host they and their customers touch already carries. The corporate zone
-// keeps the API origin, which nobody types.
+// brand every other host they and their customers touch already carries.
 //
 // Unlike the redirect host above, this one binds entirely in-template — it is a subdomain
 // CNAME, so swa-custom-domain.bicep can validate it with cname-delegation once the record
@@ -838,22 +840,21 @@ module swaManager 'modules/static-web-app.bicep' = if (deploySwa) {
 }
 
 // ── DNS: corporate zone (rvserviceflow.com) ───────────────
-// No customer-facing hostname lives here: the Manager SWA moved to the intake
-// zone in #632, so every host a human reads is on rvintake.com. What remains is
-// the API origin (#633) — an XHR target, seen in devtools and a CSP, not on a
-// sticker. The DMARC rua mailbox is not here either: it is dmarc@rvintake.com,
-// on the intake apex mailbox (Ownership Boundaries §4.4).
+// RV Intake has no host here. The Manager SWA moved to the intake zone in #632
+// and the API origin in #900; the domain stays with ADS as the RVS umbrella name
+// (Ownership Boundaries §4.9). The DMARC rua mailbox is not here either: it is
+// dmarc@rvintake.com, on the intake apex mailbox (Ownership Boundaries §4.4).
 //
-// Only the CNAME and asuid TXT are declared. The hostname binding and managed
-// certificate are out-of-band, one-time, per environment: see the apiCnameRecords
-// comment above and README.md "Bind the api.<zone> host".
+// The zone is still declared, and still in this subscription, until ADS decides
+// where it lives. All it carries is the mail posture below.
 
 // Mail posture for the corporate zone. It neither sends nor receives: the packet
 // email goes out From mail.rvintake.com, and there are no mailboxes here.
 // Saying so explicitly is what stops the domain being usable for spoofing — with
 // no SPF and no DMARC, anyone can forge From: anything@rvserviceflow.com and a
 // receiver has nothing to check it against. The domain appears in the pilot
-// agreement's history and in the JWT claim namespace, so it is guessable.
+// agreement's history and was the JWT claim namespace until #900, so it is
+// guessable.
 //
 //   null MX (RFC 7505) — preference 0, exchange "." — "accepts no mail", so a
 //     sender fails immediately rather than retrying for days. Replace this entry
@@ -884,13 +885,12 @@ var corporateMailPolicyTxtRecords = [
   }
 ]
 
-module dnsApi 'modules/dns.bicep' = if (deploySwa && deployDns) {
-  name: 'deploy-dns-api-${environmentName}'
+module dnsCorporate 'modules/dns.bicep' = if (deploySwa && deployDns) {
+  name: 'deploy-dns-corporate-${environmentName}'
   scope: resourceGroup(dnsResourceGroupName)
   params: {
-    zoneName: apiZoneName
-    cnameRecords: apiCnameRecords
-    txtRecords: concat(apiTxtRecords, corporateMailPolicyTxtRecords)
+    zoneName: corporateZoneName
+    txtRecords: corporateMailPolicyTxtRecords
     mxRecords: corporateNullMxRecords
   }
 }
@@ -1015,7 +1015,7 @@ module dnsIntake 'modules/dns.bicep' = if (deploySwa && deployDns) {
         #disable-next-line BCP318
         target: swaIntake.outputs.defaultHostname
       }
-    ], managerCnameRecords, sendGridCnameRecords, redirectCnameRecords, auth0CnameRecords, intakeApexMailCnameRecords)
+    ], managerCnameRecords, sendGridCnameRecords, redirectCnameRecords, apiCnameRecords, auth0CnameRecords, intakeApexMailCnameRecords)
     aRecords: environmentName == 'prod' ? [
       {
         name: '@'
@@ -1023,7 +1023,7 @@ module dnsIntake 'modules/dns.bicep' = if (deploySwa && deployDns) {
         targetResourceId: swaIntake.outputs.id
       }
     ] : []
-    txtRecords: concat(mailSendingDmarcTxtRecords, redirectTxtRecords, intakeApexSpfTxtRecords, intakeApexDmarcTxtRecords)
+    txtRecords: concat(mailSendingDmarcTxtRecords, redirectTxtRecords, apiTxtRecords, intakeApexSpfTxtRecords, intakeApexDmarcTxtRecords)
     mxRecords: intakeApexMxRecords
   }
 }
@@ -1071,14 +1071,14 @@ module swaIntakeDomain 'modules/swa-custom-domain.bicep' = if (deploySwa && depl
 // Grants DNS Zone Contributor on each zone — NOT on the RG — so
 // non-prod deployers can write record sets without broader access.
 
-module dnsApiRbac 'modules/dns-zone-contributor.bicep' = if (deploySwa && deployDns && environmentName == 'prod' && !empty(dnsZoneContributorPrincipalIds)) {
-  name: 'deploy-dns-api-rbac-${environmentName}'
+module dnsCorporateRbac 'modules/dns-zone-contributor.bicep' = if (deploySwa && deployDns && environmentName == 'prod' && !empty(dnsZoneContributorPrincipalIds)) {
+  name: 'deploy-dns-corporate-rbac-${environmentName}'
   scope: resourceGroup(dnsResourceGroupName)
   dependsOn: [
-    dnsApi
+    dnsCorporate
   ]
   params: {
-    zoneName: apiZoneName
+    zoneName: corporateZoneName
     principalIds: dnsZoneContributorPrincipalIds
   }
 }
@@ -1238,7 +1238,7 @@ output swaManagerDeploymentToken string = deploySwa ? swaManager.outputs.deploym
 
 @description('Azure-assigned nameservers for the corporate DNS zone (rvserviceflow.com). Empty when deployDns = false.')
 #disable-next-line BCP318
-output dnsApiNameServers array = (deploySwa && deployDns) ? dnsApi.outputs.nameServers : []
+output dnsCorporateNameServers array = (deploySwa && deployDns) ? dnsCorporate.outputs.nameServers : []
 
 @description('Azure-assigned nameservers for the Intake DNS zone (rvintake.com). Empty when deployDns = false.')
 #disable-next-line BCP318
@@ -1250,8 +1250,8 @@ output intakeFqdn string = environmentName == 'prod' ? intakeZoneName : '${intak
 @description('FQDN of the channel-tagging redirect host (Spec A-13, #599). Its DNS records are deployed; the hostname binding and managed certificate are one-time out-of-band steps — README.md "Bind the go.<zone> redirect host".')
 output redirectFqdn string = '${redirectDnsPrefix}.${intakeZoneName}'
 
-@description('FQDN of the API origin host (#633). Its DNS records are deployed; the hostname binding and managed certificate are one-time out-of-band steps — README.md "Bind the api.<zone> host".')
-output apiFqdn string = '${apiDnsPrefix}.${apiZoneName}'
+@description('FQDN of the API origin host (#633; in the intake zone since #900). Its DNS records are deployed; the hostname binding and managed certificate are one-time out-of-band steps — README.md "Bind the api.<zone> host".')
+output apiFqdn string = '${apiDnsPrefix}.${intakeZoneName}'
 
 @description('FQDN for the Manager SWA custom domain, in the intake zone (#632).')
 output managerFqdn string = '${managerDnsPrefix}.${intakeZoneName}'
@@ -1261,7 +1261,7 @@ output intakeApexAction string = (deploySwa && deployDns && environmentName == '
   ? 'ACTION REQUIRED: register the rvintake.com apex on the Intake SWA (dns-txt-token) — see Infra/Bicep.IaC/README.md "Deploy Production" step 2.'
   : ''
 
-@description('Manual follow-up after any deploy that first introduces the API origin host (#633). Bicep writes the CNAME and the asuid ownership TXT, but the App Service hostname binding waits on DNS to validate and the managed certificate waits on the binding, so neither can be declared in the same template that writes the records. Until this one-time step is run, the host resolves but TLS serves the *.azurewebsites.net wildcard and the apps must keep calling the default hostname.')
+@description('Manual follow-up after any deploy that first introduces the API origin host (#633), or moves it (#900). Bicep writes the CNAME and the asuid ownership TXT, but the App Service hostname binding waits on DNS to validate and the managed certificate waits on the binding, so neither can be declared in the same template that writes the records. Until this one-time step is run, the host resolves but TLS serves the *.azurewebsites.net wildcard and the apps must keep calling the default hostname.')
 output apiHostBindingAction string = (deployAppService && deployDns)
-  ? 'ACTION REQUIRED: bind ${apiDnsPrefix}.${apiZoneName} on the API Web App and issue its managed certificate — see Infra/Bicep.IaC/README.md "Bind the api.<zone> host". Once it answers, repoint ApiBaseUrl in both Blazor apps and drop the *.azurewebsites.net entries from the Manager CSP.'
+  ? 'ACTION REQUIRED (once per environment): bind ${apiDnsPrefix}.${intakeZoneName} on the API Web App and issue its managed certificate — see Infra/Bicep.IaC/README.md "Bind the api.<zone> host". Skip if it already answers over HTTPS.'
   : ''

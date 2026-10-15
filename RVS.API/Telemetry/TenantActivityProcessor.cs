@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using OpenTelemetry;
+using RVS.API.Services;
 
 namespace RVS.API.Telemetry;
 
@@ -13,8 +14,8 @@ public sealed class TenantActivityProcessor : BaseProcessor<Activity>
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    internal const string TenantIdClaimType = "https://rvserviceflow.com/tenantId";
-    internal const string LocationIdsClaimType = "https://rvserviceflow.com/locationIds";
+    internal const string TenantIdClaimType = ClaimsService.TenantIdClaimType;
+    internal const string LocationIdsClaimType = ClaimsService.LocationIdsClaimType;
     internal const string CorrelationIdHeader = "X-Correlation-ID";
 
     public TenantActivityProcessor(IHttpContextAccessor httpContextAccessor)

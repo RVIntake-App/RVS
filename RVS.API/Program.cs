@@ -79,7 +79,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Auth0 JWT Bearer authentication — audience: https://api.rvserviceflow.com
+// Auth0 JWT Bearer authentication — audience: https://api.rvintake.com
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

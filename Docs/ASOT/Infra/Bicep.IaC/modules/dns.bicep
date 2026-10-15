@@ -15,8 +15,9 @@
 // upserts each record set.
 //
 // Intended to be called once per zone from main.bicep — currently:
-//   • rvserviceflow.com  → Manager SWA (CNAME subdomain)
-//   • rvintake.com       → Intake SWA (apex ALIAS in prod, CNAME subdomain in staging)
+//   • rvintake.com       → every RV Intake host: Intake SWA (apex ALIAS in prod, CNAME
+//                          subdomain in staging), Manager, redirect, API origin, mail, login
+//   • rvserviceflow.com  → corporate zone; mail posture only, no RV Intake host (#900)
 // ──────────────────────────────────────────────────────────────
 targetScope = 'resourceGroup'
 

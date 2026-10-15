@@ -82,8 +82,9 @@ DEV_BLOB_GROUP_OBJECT_ID="e7c21157-3e7a-4a31-9408-c4ccef22670e"
 #   PROD    static web    : rg-rvs-prod-westus2
 #
 # ── DNS zones (both live in the PROD primary RG, shared across envs) ──────────
-#   rvserviceflow.com  → Manager SWA   (manager-staging.* CNAME, manager.* CNAME)
-#   rvintake.com       → Intake SWA    (staging.* CNAME in staging; apex ALIAS-A in prod)
+#   rvintake.com       → every RV Intake host: Intake SWA (staging.* CNAME in staging;
+#                        apex ALIAS-A in prod), manager*, go*, api* (#900), mail*, login
+#   rvserviceflow.com  → corporate zone, mail posture only; stays with ADS (§4.9)
 #   ...both in rg-rvs-prod-westus3
 #
 # ── Resource names by environment (from main.bicep name vars / naming-tags) ───
@@ -422,8 +423,8 @@ az webapp config appsettings list \
 #      sender pool, and put its SID (MG…) and the number in the .bicepparam
 #      (twilioMessagingServiceSid, smsFromPhoneNumber).
 #   2. Messaging Service → Integration: incoming messages →
-#        https://api-staging.rvserviceflow.com/api/events/twilio-sms/inbound
-#      (prod: https://api.rvserviceflow.com/…). Status callback →
+#        https://api-staging.rvintake.com/api/events/twilio-sms/inbound
+#      (prod: https://api.rvintake.com/…). Status callback →
 #        …/api/events/twilio-sms/status
 #      The API also sets StatusCallback on every send; this is the fallback.
 #   3. Messaging Service → Opt-Out Management (Advanced Opt-Out): ON. Set the HELP
@@ -435,7 +436,7 @@ az webapp config appsettings list \
 #   5. Signature check from outside — must answer 403, not 200:
 #        curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 #          -H 'X-Twilio-Signature: forged' -d 'From=%2B18015551234&Body=STOP&MessageSid=SMx' \
-#          https://api-staging.rvserviceflow.com/api/events/twilio-sms/inbound
+#          https://api-staging.rvintake.com/api/events/twilio-sms/inbound
 
 # ── (4) ACS teardown — ONE TIME, per environment, after the Bicep redeploy ────
 # Removing a module from Bicep never deletes the resource (incremental mode), so

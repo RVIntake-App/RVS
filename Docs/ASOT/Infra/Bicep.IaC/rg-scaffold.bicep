@@ -18,7 +18,7 @@ targetScope = 'subscription'
 // ── Parameters ────────────────────────────────────────────────
 
 @description('Owning team or distribution list for the Owner tag.')
-param owner string = 'platform-team@rvserviceflow.com'
+param owner string = 'ops@rvintake.com'
 
 @description('Cost center or billing code for the CostCenter tag.')
 param costCenter string = 'Engineering'

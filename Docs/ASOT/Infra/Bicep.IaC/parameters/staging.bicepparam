@@ -154,5 +154,6 @@ param swaResourceGroupName = 'rg-rvs-staging-westus2'
 param swaSkuName = 'Free'
 
 // DNS — Manager: CNAME manager-staging.rvintake.com (#632). Intake: CNAME staging.rvintake.com.
-//       Both now in the rvintake.com zone; rvserviceflow.com is corporate-only.
+//       API: CNAME api-staging.rvintake.com (#900). All in the rvintake.com zone;
+//       rvserviceflow.com is corporate-only.
 param deployDns = true

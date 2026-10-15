@@ -38,6 +38,16 @@ public sealed class ClaimsServiceTests
         sut.CanUpdateTenantConfig().Should().BeFalse();
     }
 
+    // Every other test reads the constants, so only this pins the strings the Auth0
+    // Post-Login Action writes (Docs/ASOT/Infra/Auth0/baseline/actions). Moved to
+    // rvintake.com before go-live (#900).
+    [Fact]
+    public void ClaimTypes_ShouldUseTheRvIntakeNamespace()
+    {
+        ClaimsService.TenantIdClaimType.Should().Be("https://rvintake.com/tenantId");
+        ClaimsService.LocationIdsClaimType.Should().Be("https://rvintake.com/locationIds");
+    }
+
     [Fact]
     public void GetTenantIdOrThrow_WhenClaimPresent_ShouldReturnTenantId()
     {

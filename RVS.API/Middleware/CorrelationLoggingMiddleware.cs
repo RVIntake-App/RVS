@@ -1,3 +1,5 @@
+using RVS.API.Services;
+
 namespace RVS.API.Middleware;
 
 /// <summary>
@@ -9,8 +11,8 @@ public sealed class CorrelationLoggingMiddleware
     private readonly RequestDelegate _next;
 
     private const string CorrelationIdHeader = "X-Correlation-ID";
-    private const string TenantIdClaimType = "https://rvserviceflow.com/tenantId";
-    private const string LocationIdsClaimType = "https://rvserviceflow.com/locationIds";
+    private const string TenantIdClaimType = ClaimsService.TenantIdClaimType;
+    private const string LocationIdsClaimType = ClaimsService.LocationIdsClaimType;
 
     public CorrelationLoggingMiddleware(RequestDelegate next)
     {
