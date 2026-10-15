@@ -15,7 +15,7 @@ Auth0 tenant `dev-2jhzz8xmjggh26pm.us.auth0.com`, API audience `https://api.rvse
 
 > Both of those are **opaque identifiers**, not addresses to resolve. Since `#633` the API is also *served* at `api.rvserviceflow.com`, and since `#634` the claim namespace is the only other thing on that domain — but neither is coupled to the hostname. Changing the audience invalidates every issued token and every grant; changing the namespace breaks claim extraction in seven places. Moving a hostname is not a reason to touch either. The user-facing brand moved to `rvintake.com`; these did not, and should not.
 
-**One Auth0 tenant serves development, staging and production** (#610). A second tenant needs a paid Auth0 plan, so the split is deferred until usage justifies the cost. The accepted risks: any Auth0 change reaches every environment at once, and a test account carrying a real dealer's `tenantId` can sign in to the production Manager app and see that dealer's data. Test accounts must use test-only `tenantId` values. The tenant also hosts unrelated products; RVS owns only what `Infra/Auth0/baseline/` declares.
+**One Auth0 tenant serves development, staging and production** (#610). A second tenant needs a paid Auth0 plan, so the split is deferred until usage justifies the cost. The accepted risks: any Auth0 change reaches every environment at once, and a test account carrying a real dealer's `tenantId` can sign in to the production Manager app and see that dealer's data. Test accounts must use test-only `tenantId` values. The tenant holds nothing but RV Intake (cleared October 15 2026, Ownership Boundaries §4.7): what `Infra/Auth0/baseline/` declares, plus the `rvs-config-automation` and `RVS API Provisioner` Management API applications.
 
 Configuration changes go through `Infra/Auth0/auth0-apply.sh` (plan, review, then `--apply`), not the dashboard. See `Infra/Auth0/README.md`, including how to split into per-environment tenants later.
 
@@ -72,7 +72,7 @@ Authorization is **per-permission, never per-role**. Policies are declared in `R
 | `CanSendIntakeInvites` | `intake-invites:send` | Advisor intake invites (Spec A-14, #663). Held by every role that can create service requests — `dealer:advisor`, `dealer:manager`, `dealer:owner`, `dealer:corporate-admin`, `dealer:regional-manager`, `platform:admin` (#666). The manager app cannot read `permissions` (Auth0 RBAC writes them to the access token only, never the id token), so the Send intake link button is always shown and a 403 is explained in the dialog |
 | `PlatformAdmin` | `platform:tenants:manage` | **Plus** the caller's `sub` on `Admin:AllowedUserIds` (`PlatformAdminAllowlistHandler`). Guards `api/admin/tenants` (#563) |
 
-`PlatformAdmin` is the one policy with a second requirement. The permission alone is not enough because the Auth0 tenant is shared across environments and products: a stray `platform:admin` assignment must not open the provisioning tool.
+`PlatformAdmin` is the one policy with a second requirement. The permission alone is not enough because the Auth0 tenant is shared across environments: a stray `platform:admin` assignment must not open the provisioning tool.
 
 Packet delivery (Spec B) will need new permissions — at minimum resend and per-location packet configuration. Neither exists yet.
 

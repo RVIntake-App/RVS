@@ -1,7 +1,7 @@
 # RVS — Ownership Boundaries
 
-**Version:** 1.5 · October 14, 2026 (§4.5 done: `RVS` moved to the `RVIntake-App` GitHub organization; OIDC subjects now carry the org and repo IDs)
-**Status:** Action plan. The legal owner is decided (§4.1), the role-alias mail is live (§4.4) and the repo is in its own GitHub organization (§4.5). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
+**Version:** 1.7 · October 15 2026 (§4.6 step 1 done: the Entra tenant has its own admin and break-glass accounts. §4.7 done: the Auth0 tenant holds only RV Intake and `auth0@` administers it)
+**Status:** Action plan. The legal owner is decided (§4.1), the role-alias mail is live (§4.4), the repo is in its own GitHub organization (§4.5), the Entra tenant has its own admin accounts (§4.6 step 1), and the Auth0 tenant holds only RV Intake (§4.7). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
 
 The goal: **RV Intake can be handed to a new owner as a single unit.** Every account, tenant, domain, trademark and contract it depends on should belong to RV Intake and nothing else, so that a sale is a handover, not a migration project.
 
@@ -86,14 +86,14 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Customer contract** | **Drafted (v1.4):** the Pilot Agreement names "Arnold Digital Solutions LLC, doing business as RV Intake", adds an assignment clause, and runs the X-3 license to successors and assigns. The `/terms` and `/privacy` pages carry the same successor and transfer wording. All of it still needs attorney review. | Until the attorney confirms the wording, the X-3 data license may not survive a sale, and every contract may need re-signing. | §4.2 — **before Nova accepts** |
 | **Trademark** | None filed. | **Decided:** the name and logo stay. The word mark is descriptive, so expect the Supplemental Register at best, after use. A buyer relies on the clearance search and the domain more than on the registration. | §4.3 |
 | **Domains** | `rvintake.com` (product) and `rvserviceflow.com` (now the RVS umbrella, stays with ADS). DNS zones are in Azure (good). `rvintake.com` is in a GoDaddy account of its own, with login `godaddy@` (§4.4); its registrant contact still needs ADS's name and address (§4.8). | The API origin `api.rvserviceflow.com`, the Auth0 audience and the claim namespace all sit on a domain RV Intake won't own. Registrant and registrar login for `rvintake.com` must belong to ADS for RV Intake. | §4.4, §4.8, §4.9 |
-| **Auth0** | One tenant (#610). It also holds Benefetch, ManagersFriend, RVMTP and other apps, all obsolete and to be deleted. | None once they're gone: the tenant is RV Intake's alone and hands over by changing its admins. The admin login still needs to be the `auth0@` alias. | §4.7 |
-| **Azure tenant** | **Confirmed:** one tenant, created with `markarnoldutah@gmail.com`, holding one subscription with only RV Intake resources. | No directory change needed. The open point is admin access: if the personal Microsoft account is the only Global Admin, the tenant can't be handed over cleanly. | §4.6 |
+| **Auth0** | **Done (§4.7):** one tenant (#610), holding only RV Intake since October 15 2026. `auth0@` is Team Owner and tenant Admin. | None. A sale adds the buyer as Team Owner and tenant Admin. | §4.7 |
+| **Azure tenant** | **Confirmed:** one tenant, created with `markarnoldutah@gmail.com`, holding one subscription with only RV Intake resources. Renamed RV Intake; `admin@` and `breakglass@` accounts in the tenant are Global Admins and subscription Owners (§4.6 step 1). | No directory change needed. The personal account is still a Global Admin and holds direct data-plane roles, which are to be removed later. | §4.6 |
 | **Azure billing** | The only subscription in the tenant, so the bill carries nothing but RV Intake. Offer type and billing-account owner: to confirm (§5). Probably an individual account in your name, since the tenant was created with a personal Microsoft account. | A Visual Studio credit subscription can't go to a buyer at all. A pay-as-you-go account in your own name works at sale time, since billing transfers painlessly (§1), but it invoices you rather than ADS. | §4.6 |
 | **GitHub** | **Done (§4.5):** `RVIntake-App/RVS`, in an organization owned by `rvintake-gh` (`github@`) and your personal account. OIDC subjects are `repo:RVIntake-App@341154614/RVS@1176179645:environment:*`. | None. A sale adds the buyer as an org owner; the IDs, and so the subjects, don't change. | §4.5 |
 | **Ops and DMARC email** | **Done (§4.4):** `ops@rvintake.com` and `dmarc@rvintake.com`, role aliases on the product's own domain. No DMARC records live outside Azure any more. | None. | §4.4 |
 | **Customer contact** | `support@arnolddigitalsolutions.com` in `SiteIdentity.cs`, the contact the Twilio toll-free verification (#659) will name. | Same, plus it's tied to the carrier filing. | §4.4 / §4.8 |
 | **SendGrid, Twilio** | One account each. Owner login and any sharing with other products: to confirm. | Login emails need to be product aliases, and the accounts must not be shared. | §4.8 |
-| **Auth0 identity mail** | Uses its own SendGrid key (Auth0 checklist §8). | Resolves itself if the SendGrid account is RV Intake's own. | §4.7 |
+| **Auth0 identity mail** | SendGrid, with its own restricted key, since October 15 2026 (Auth0 checklist §8.1). | Resolves itself if the SendGrid account is RV Intake's own. | §4.7, §4.8 |
 | **Money** | To confirm: which bank account and card pay RV Intake's bills. | Mixed books make the asset sale's purchase-price allocation and due diligence harder. | §4.1 |
 
 Already in good shape: the Azure tenant and subscription hold only RV Intake, Bicep is the only source of truth for Azure, both DNS zones are in Azure, nothing in the repo references a Plover resource, and the Auth0 configuration is scripted (`Docs/ASOT/Infra/Auth0/`).
@@ -167,21 +167,36 @@ The repo can stay public.
 
 The tenant already holds only RV Intake, so the directory change, the redeploy it would force and the recreated app registrations are all off the plan. What's left:
 
-1. **Admin accounts.** Create a Global Admin *in* the tenant, such as `admin@<tenant>.onmicrosoft.com`, with the `azure@` alias (§4.4) as its contact. Add a second break-glass Global Admin, keep its credentials offline, and turn on MFA for both. Your personal Microsoft account stays as a member you can remove, not the only admin. Rename the tenant's display name to RV Intake. The initial `*.onmicrosoft.com` domain can't be renamed; it is cosmetic.
-2. **Billing.** If the subscription is a Visual Studio or MSDN credit subscription (§5), it has to move to pay-as-you-go before anything else. Then create a billing account (Microsoft Customer Agreement) in ADS's name, paid from the RV Intake bank account or card (§4.1), and **transfer billing ownership** of the subscription to it. Resources, names and Azure OpenAI quota stay as they are. Strictly, this is about clean books, not the handover: billing transfers to a buyer from any account type. But it keeps RV Intake's costs off your personal invoices.
-3. **Keep the tenant RV Intake-only.** Plover and any other product get their own tenant (§6). Don't add their subscriptions, app registrations or groups here.
+1. **Admin accounts** *(done October 15 2026)*. The tenant's display name is now RV Intake. Two accounts were created in the tenant, each a Global Administrator and an Owner of the RVS subscription:
+   - `admin@markarnoldutahgmail.onmicrosoft.com`: MFA is a passkey in 1Password. Its contact email is `azure@rvintake.com`.
+   - `breakglass@markarnoldutahgmail.onmicrosoft.com`: MFA is Microsoft Authenticator on your phone. Use it only to test it, about once a quarter. It has no email: Entra requires a user's email to be unique across the tenant, and `azure@` is taken.
+
+   The two accounts depend on different things (1Password and the phone), so losing one still leaves the other. Keep the break-glass password outside 1Password. A replacement phone doesn't restore its Authenticator registration: sign in as `admin@`, delete the old method and register again.
+
+   **The initial domain stays.** You can't rename `markarnoldutahgmail.onmicrosoft.com`; getting a different one means a new tenant and the directory change §1 avoids. A buyer takes over by being added as Global Admin, so the name is only cosmetic. You can't add `rvintake.com` as a custom domain either, because GoDaddy's Microsoft 365 tenant (§4.4) has already verified it, and a domain can be verified in only one tenant.
+2. **Retire the personal account's admin access** *(deferred)*. `markarnoldutah@gmail.com` is still a Global Administrator, by choice for now. When it goes, take these Azure roles off it too (as listed on October 15 2026):
+   - **Assigned to it directly, so remove them in IAM:** Owner on the RVS subscription (listed twice, so check the scope of each before removing), Key Vault Administrator on `kv-rvs-staging-wus3`, Key Vault Secrets Officer on `kv-rvs-prod-wus3`, Storage Blob Data Owner and Storage Blob Data Reader on `strvsstagingwus3001`, and Storage Blob Data Contributor and Storage Table Data Reader on `strvsprodwus3001`.
+   - **Inherited from `sg-rvs-dev-blob`, so leave the group's assignments alone:** Storage Blob Data Contributor, Storage Blob Delegator and Storage Table Data Contributor on `strvsstagingwus3001`. Bicep grants these to the group (`devBlobAccessPrincipalId`), and a redeploy would put them back. Remove the account from the group instead.
+
+   Whatever you still do day to day (`az`, the Cosmos seeder, reading Key Vault) then runs as `admin@` or through group membership.
+3. **Billing** *(deferred until ADS's RV Intake bank account exists, §4.1)*. If the subscription is a Visual Studio or MSDN credit subscription (§5), it has to move to pay-as-you-go before anything else. Then create a billing account (Microsoft Customer Agreement) in ADS's name, paid from the RV Intake bank account or card (§4.1), and **transfer billing ownership** of the subscription to it. Resources, names and Azure OpenAI quota stay as they are. Strictly, this is about clean books, not the handover: billing transfers to a buyer from any account type. But it keeps RV Intake's costs off your personal invoices.
+4. **Keep the tenant RV Intake-only.** Plover and any other product get their own tenant (§6). Don't add their subscriptions, app registrations or groups here.
 
 **The `rvserviceflow.com` DNS zone** sits in the RVS resource group today. If ADS keeps that domain (§4.9), move its zone to an ADS subscription once nothing of RV Intake's resolves through it.
 
 **When:** any time. None of this needs G-5.
 
-### 4.7 Clear the Auth0 tenant down to RV Intake
+### 4.7 Clear the Auth0 tenant down to RV Intake *(done October 15 2026)*
 
-The other apps in the tenant (Benefetch, ManagersFriend, RVMTP and the rest) are obsolete. Once they're deleted, the existing tenant is RV Intake's alone, and it hands over the way every other account does: add the buyer as an admin, remove yourself. No new tenant and no reconfiguration.
+The tenant is RV Intake's alone. It hands over the way every other account does: add the buyer as an admin, remove yourself. No new tenant and no reconfiguration.
 
-1. **Delete everything RV Intake doesn't declare.** RV Intake owns what `Docs/ASOT/Infra/Auth0/baseline/` declares (actions, clients, the resource server, roles), plus the `rvs-config-automation` M2M app and the tenant-level settings: the `login.rvintake.com` custom domain, the email provider and Universal Login branding. Delete every other application, API, Action, connection and user. Run `auth0-apply.sh` afterwards: the plan should still report no differences.
-2. **Admin login.** Invite the `auth0@` alias (§4.4) as a tenant admin. Your personal login stays as a member you can remove.
-3. **Update the docs that describe the shared tenant:** `ASOT/RVS_Identity.md` ("also hosts unrelated products") and `ASOT/Infra/Auth0/README.md`.
+**What it holds now.** Everything `Docs/ASOT/Infra/Auth0/baseline/` declares (the RV Intake API, the eight roles, the Manager and Swagger applications, the Post-Login Action) plus two Management API applications the baseline doesn't declare: `rvs-config-automation`, which the scripts use, and `RVS API Provisioner`, which the `/admin` pages use. Both connections stay: `Username-Password-Authentication`, and `google-oauth2`, which the baseline enables on the Swagger client. The only users carry an RV Intake `tenantId`. The plan reports **No differences** and lists only those two applications under "not in the baseline".
+
+**What went.** The Benefetch and ManagersFriend APIs, the `Postman ` application (a machine-to-machine credential with 24 Benefetch scopes), `Default App`, and two unbound Actions (`RVMTP: add roles from metadata to access_token`, `Add claims to identityToken`). The tenant had no other products' roles or users left.
+
+**Admin login.** `auth0@rvintake.com` is a Team Owner and a tenant Admin, with a passkey in 1Password. Your Gmail login stays a Team Owner you can remove. Sign in as `auth0@` through `https://manage.auth0.com/dashboard/us/dev-2jhzz8xmjggh26pm/`: an account that owns no tenant of its own is otherwise sent through Auth0's sign-up questionnaire, which tries to create one (on the Free plan it didn't).
+
+**Found on the way.** Auth0's email provider still pointed at Azure Communication Services, removed on October 2, so its password-reset mail had been failing without any error showing. It now uses SendGrid with its own restricted key (checklist §8.1), and a reset to an outside mailbox passed SPF, DKIM and DMARC on `mail.rvintake.com`. The plan's colour check now reads the Universal Login theme, which is what the login screen renders, rather than the stale `/branding` value.
 
 The tenant's name, `dev-2jhzz8xmjggh26pm`, can't be changed. Users never see it behind `login.rvintake.com`, and it doesn't stop a handover.
 
@@ -226,7 +241,7 @@ The last two are opaque strings. A buyer could keep them without owning the doma
 
 ## 5. Confirm the current state first
 
-Already confirmed: one Entra tenant, holding one subscription with only RV Intake resources. Run these for the rest and keep the output. They decide §4.6 steps 1 and 2.
+Already confirmed: one Entra tenant, holding one subscription with only RV Intake resources. Run these for the rest and keep the output. They decide §4.6 steps 1 and 3.
 
 ```bash
 # Who you are in the tenant
@@ -254,7 +269,7 @@ How to read the results:
 
 - **UPN contains `#EXT#`, or the only Global Admin is your personal account:** do §4.6 step 1 before anything else.
 - **quotaId starts with `MSDN` or contains `VisualStudio`:** a personal benefit subscription. It's tied to your subscriber license and can't go to a buyer. Move to pay-as-you-go first.
-- **Agreement type is `MicrosoftOnlineServicesProgram`:** an individual pay-as-you-go account in your name. Fine for a handover, but do §4.6 step 2 for the books.
+- **Agreement type is `MicrosoftOnlineServicesProgram`:** an individual pay-as-you-go account in your name. Fine for a handover, but do §4.6 step 3 for the books.
 - **An app registration or group belongs to another product:** delete it, or move that product to its own tenant.
 
 ---

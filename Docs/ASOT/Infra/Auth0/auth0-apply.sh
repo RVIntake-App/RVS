@@ -29,8 +29,8 @@
 #                          wording. Expected values come from the tenant file; an unset
 #                          value skips its check.
 #
-# What it leaves alone: everything else in the tenant (other products' APIs and apps,
-# Postman / API Explorer apps, other tenant-wide settings, attack protection, users). It
+# What it leaves alone: everything else in the tenant (the Management API applications
+# rvs-config-automation and RVS API Provisioner, other tenant-wide settings, attack protection, users). It
 # never deletes a resource. Inside the resources it manages it is authoritative: permissions
 # missing from the baseline are removed from RVS roles, grants and the RVS API.
 #
@@ -455,8 +455,7 @@ check_appsettings() {
 # ── Tenant-wide settings RVS sets by hand (checked, never applied) ──────────────
 #
 # Auth0 checklist §6-§8. These are tenant-wide and set in the dashboard on purpose, and
-# the tenant is shared with other products, so anyone with dashboard access can change
-# them. Each one breaks something quietly if it drifts: without the default custom domain,
+# anyone with dashboard access can change them. Each one breaks something quietly if it drifts: without the default custom domain,
 # /admin set-password links fall back to the canonical host; without the email provider,
 # reset mail comes from no-reply@auth0user.net.
 
@@ -552,7 +551,7 @@ check_tenant_settings() {
     fi
   fi
 
-  # fields= keeps the provider's credentials (an ACS connection string) out of the response.
+  # fields= keeps the provider's credentials (a SendGrid API key) out of the response.
   if [[ -n "${AUTH0_EXPECT_EMAIL_PROVIDER:-}${AUTH0_EXPECT_EMAIL_FROM:-}" ]] \
       && fetch body "/emails/provider?fields=name,enabled,default_from_address&include_fields=true" \
           read:email_provider "email provider"; then
@@ -581,20 +580,32 @@ check_tenant_settings() {
       && fetch body "/branding" read:branding "Universal Login branding"; then
     check_value "login logo" "$(jq -r '.logo_url // ""' <<<"$body")" "${AUTH0_EXPECT_BRANDING_LOGO_URL:-}"
     check_value "login favicon" "$(jq -r '.favicon_url // ""' <<<"$body")" "${AUTH0_EXPECT_BRANDING_FAVICON_URL:-}"
-    check_value "login primary colour" "$(jq -r '.colors.primary // ""' <<<"$body")" "${AUTH0_EXPECT_BRANDING_PRIMARY_COLOR:-}"
+
+    # The colours the login screen renders come from the default theme (Branding -> Universal
+    # Login -> Update branding theme) once one exists; /branding's colours.primary is then a
+    # leftover the dashboard no longer shows. Without a theme (404), /branding's colours apply.
+    local primary background source="/branding"
+    primary="$(jq -r '.colors.primary // ""' <<<"$body")"
     # page_background is a string for a flat colour and an object for a gradient; a gradient
     # prints as its JSON so the mismatch line says what is actually set.
-    check_value "login page background" \
-      "$(jq -r '.colors.page_background // "" | if type == "string" then . else tojson end' <<<"$body")" \
-      "${AUTH0_EXPECT_BRANDING_PAGE_BACKGROUND:-}"
+    background="$(jq -r '.colors.page_background // "" | if type == "string" then . else tojson end' <<<"$body")"
+    if [[ -n "${AUTH0_EXPECT_BRANDING_PRIMARY_COLOR:-}${AUTH0_EXPECT_BRANDING_PAGE_BACKGROUND:-}" ]] \
+        && fetch body "/branding/themes/default" read:branding "Universal Login theme" \
+        && [[ -n "$body" ]]; then
+      source="theme"
+      primary="$(jq -r '.colors.primary_button // ""' <<<"$body")"
+      background="$(jq -r '.page_background.background_color // ""' <<<"$body")"
+    fi
+    check_value "login primary colour ($source)" "$primary" "${AUTH0_EXPECT_BRANDING_PRIMARY_COLOR:-}"
+    check_value "login page background ($source)" "$background" "${AUTH0_EXPECT_BRANDING_PAGE_BACKGROUND:-}"
   fi
 
   # The login widget's wording (checklist §7.3). Custom text is keyed by screen; for these
   # prompts the screen has the prompt's name. Which prompt a tenant actually renders depends
   # on whether the flow is identifier-first, so every prompt named in the tenant file is
   # checked rather than guessing. The expected text is meant to carry Auth0's ${clientName}
-  # placeholder: this is tenant-wide, and the other products in the tenant need their own
-  # names in the same sentence.
+  # placeholder: this is tenant-wide, and each application needs its own name in the
+  # same sentence.
   if [[ -n "${AUTH0_EXPECT_LOGIN_DESCRIPTION:-}" ]]; then
     for prompt in ${AUTH0_EXPECT_LOGIN_PROMPTS:-login login-id login-password}; do
       fetch body "/prompts/$prompt/custom-text/en" read:prompts "login text" || break
