@@ -43,7 +43,17 @@ public sealed class TenantAccessGateApiFactory : WebApplicationFactory<Program>
             "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
         // The PlatformAdmin policy's allowlist requirement reads this at request time.
         Environment.SetEnvironmentVariable("Admin__AllowedUserIds__0", AdminUserId);
+        // Sentinels a vault may still hold after the Swagger SPA client was deleted: Swagger UI
+        // must not publish them (SwaggerUiIntegrationTests).
+        Environment.SetEnvironmentVariable("Auth0__ClientId", SentinelClientId);
+        Environment.SetEnvironmentVariable("Auth0__ClientSecret", SentinelClientSecret);
     }
+
+    /// <summary>A stale <c>Auth0:ClientId</c> value Swagger UI must not publish.</summary>
+    public const string SentinelClientId = "sentinel-swagger-client-id";
+
+    /// <summary>A stale <c>Auth0:ClientSecret</c> value Swagger UI must not publish.</summary>
+    public const string SentinelClientSecret = "sentinel-swagger-client-secret";
 
     public FakeTenantConfigRepository TenantConfigRepository { get; } = new();
 

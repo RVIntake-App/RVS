@@ -256,7 +256,7 @@ Auth0--TokenUrl           https://dev-2jhzz8xmjggh26pm.us.auth0.comoauth/token
 Staging's are correct.
 The commands above overwrite both with well-formed values, which is the cheapest moment to fix it — but if you ever redeploy with the `auth0Domain` parameter, pass it **with** a trailing slash or the malformation comes back.
 
-`Auth0--AuthorizationUrl` and `Auth0--TokenUrl` are written by [`modules/auth0-keyvault-secrets.bicep`](../Infra/Bicep.IaC/modules/auth0-keyvault-secrets.bicep) and **nothing currently reads them** — Swagger derives both from `Auth0:Domain` at request time, via `.TrimEnd('/')`, which is why the prod malformation has never surfaced.
+`Auth0--AuthorizationUrl` and `Auth0--TokenUrl` are written by [`modules/auth0-keyvault-secrets.bicep`](../Infra/Bicep.IaC/modules/auth0-keyvault-secrets.bicep) and **nothing reads them**, which is why the prod malformation has never surfaced. Swagger UI used to derive both from `Auth0:Domain`; it has had no sign-in since October 15 2026.
 Set them anyway so a later `auth0Domain` redeploy doesn't reintroduce the canonical host, and so the next person reading the vault isn't misled.
 
 The alternative to the loop above is a redeploy with `--parameters auth0Domain=https://login.rvintake.com/ …`, which rewrites all three. That needs every other `auth0*` parameter supplied in the same command (the module is skipped entirely when `auth0Domain` is empty), so the `az keyvault secret set` route is usually less work.
@@ -369,7 +369,7 @@ Out of the box the login card reads **"Log in to RV Intake to continue to RV Int
 
 The fix is the prompt's custom text, not the Friendly Name — the Friendly Name is tenant-wide and names the company, not the application (and `auth0-apply.sh` checks it against `AUTH0_EXPECT_FRIENDLY_NAME`).
 
-**Keep the `${clientName}` placeholder.** Custom text is as tenant-wide as everything else in §7: hard-coding "RV Intake Manager" would put the Manager's name on the Swagger client's login screen too. `Log in to ${clientName}` renders each application's own name.
+**Keep the `${clientName}` placeholder.** Custom text is as tenant-wide as everything else in §7: hard-coding "RV Intake Manager" would name the Manager on any other application's login screen, and a second one is likely when environments split (#610). `Log in to ${clientName}` renders each application's own name.
 
 Set it on three prompts. Which one a tenant renders depends on whether the login flow is identifier-first, and the flow can be changed later by anyone with dashboard access:
 

@@ -9,7 +9,7 @@ Development, staging and production currently share **one** tenant, `dev-2jhzz8x
 | Path | What it is |
 | --- | --- |
 | `tenants/<name>.env` | One file per Auth0 tenant: domain, where its Management API credentials live, and the environment-specific URLs. Today only `shared.env`; `_template.env` is the starting point for more. |
-| `baseline/` | Desired state for what RVS owns: the RVS API and its permissions, roles, the Manager and Swagger applications (with their API grants and connections), and the Post-Login Action source. Environment-agnostic; URLs come from the tenant file. |
+| `baseline/` | Desired state for what RVS owns: the RVS API and its permissions, roles, the Manager application (with its API grant and connection), and the Post-Login Action source. Environment-agnostic; URLs come from the tenant file. |
 | `auth0-apply.sh` | Compares a tenant with `baseline/` and, with `--apply`, makes it match. |
 | `auth0-export.sh` | Read-only snapshot of a whole tenant into `snapshots/<name>/`. For inspecting a tenant or finding drift outside the baseline; not a source of truth. |
 | `lib.sh` | Helpers shared by both scripts. |
@@ -72,4 +72,4 @@ Common edits:
 ## Known state worth knowing
 
 - The `dealer:technician` role and the `analytics:read` permission are archived scope. They stay in the baseline because they exist live; remove them as part of the descope. `service-requests:update-service-event` was removed from the baseline in #457; the next apply drops it from the RVS API and every RVS role.
-- The Swagger SPA Client's grant to the RVS API has no permissions, and the API only issues permissions an application is granted. Tokens from Swagger UI therefore carry none.
+- Swagger UI has no sign-in. The Swagger SPA Client was removed from the baseline on October 15 2026: its grant carried no permissions, so its tokens could reach no protected endpoint, and the API was publishing its client secret in the public `/swagger/index.js`. Delete the live application and the `google-oauth2` connection it used in the dashboard; the scripts never delete.

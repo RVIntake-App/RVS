@@ -63,7 +63,7 @@ Every file is deployable as committed. Prod is a single file with no phases; the
 Two things to know before using these:
 
 - **Prod is live** (first deployed 2026-09-12). The northcentralus Whisper quota is 3 units subscription-wide, and `gpt-5` in westus3 allows 3 units per model; for both, `staging = 1` + `prod = 2` fits exactly with no headroom, so raising either value needs a quota increase first.
-- **No parameter file sets the Auth0 values.** `auth0Domain`, `auth0Audience`, `auth0ClientId`, `auth0ClientSecret` are empty, so `auth0-keyvault-secrets.bicep` is skipped on a param-file-only deploy and the vault's existing `Auth0--*` secrets are left as they are. Pass the values on the CLI only to create or change those secrets.
+- **No parameter file sets the Auth0 values.** `auth0Domain` and `auth0Audience` are empty, so `auth0-keyvault-secrets.bicep` is skipped on a param-file-only deploy and the vault's existing `Auth0--*` secrets are left as they are. Pass the values on the CLI only to create or change those secrets.
 
 ---
 
