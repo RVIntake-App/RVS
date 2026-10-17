@@ -852,6 +852,28 @@ az deployment sub create ... \
 If the parameter is ever left empty, the rules still evaluate and fire but
 notify nobody — the `opsAlertReceiverAction` deployment output flags this.
 
+**Notifications Azure would otherwise send to personal accounts.** Left to their
+defaults, these email the subscription's role holders, i.e. personal accounts,
+not `ops@` (Ownership Boundaries §6 rule 7). Bicep declares all of them:
+
+| What | Where | Environments |
+|---|---|---|
+| Failure Anomalies smart detection → ops action group | `monitor-alerts.bicep` (`failureAnomalies`). Same name as the rule Azure creates by itself, so a deploy takes it over rather than adding a second | Each |
+| Service Health alert (`alr-rvs-service-health`) → ops action group | `monitor-alerts.bicep`, when `deployServiceHealthAlert` | Prod only |
+| Defender for Cloud security contact → `ops@`, Owner-role emails off | `subscription-notifications.bicep` | Prod only |
+| Monthly budget (`budget-rvs-monthly`, `monthlyBudgetAmount`) at 80% / 100% actual and 100% forecast → ops action group | `subscription-notifications.bicep` | Prod only |
+
+"Prod only" because staging and prod share one subscription and each of these
+exists once per subscription: `deploySubscriptionNotifications = true` is set in
+`prod.bicepparam` alone. Setting it in both would email every Azure incident
+twice and have the two deployments overwrite each other's security contact and
+budget. The budget covers both environments; keep `budgetStartDate` fixed once
+deployed, since Azure rejects a change to an existing budget's start date.
+
+After the first deploy that takes over Failure Anomalies, the action group Azure
+created for it ("Application Insights Smart Detection", in the same resource
+group) has nothing pointing at it; delete it by hand. A deploy never removes it.
+
 **Alert rules** — log-search rules (`Microsoft.Insights/scheduledQueryRules`,
 `kind: LogAlert`) scoped to the App Insights component. Each query is
 `union traces, exceptions | where tostring(customDimensions.EventId) == "<id>"`
