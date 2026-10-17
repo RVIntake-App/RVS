@@ -1,7 +1,7 @@
 # RVS — Ownership Boundaries
 
-**Version:** 1.7 · October 15 2026 (§4.6 step 1 done: the Entra tenant has its own admin and break-glass accounts. §4.7 done: the Auth0 tenant holds only RV Intake and `auth0@` administers it)
-**Status:** Action plan. The legal owner is decided (§4.1), the role-alias mail is live (§4.4), the repo is in its own GitHub organization (§4.5), the Entra tenant has its own admin accounts (§4.6 step 1), and the Auth0 tenant holds only RV Intake (§4.7). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
+**Version:** 1.9 · October 17 2026 (§6 rule 7: route messages by kind to `ops@`, `billing@` or the login alias; §4.8 lists the notification settings to revisit; Azure's are done in Bicep)
+**Status:** Action plan. The legal owner is decided (§4.1), the role-alias mail is live (§4.4), the repo is in its own GitHub organization (§4.5), the Entra tenant has its own admin accounts (§4.6 step 1), the Auth0 tenant holds only RV Intake (§4.7), and SendGrid and Twilio sign in as `twilio@` (§4.8). Everything else is not yet started. The entity structure is a draft pending attorney and CPA review.
 
 The goal: **RV Intake can be handed to a new owner as a single unit.** Every account, tenant, domain, trademark and contract it depends on should belong to RV Intake and nothing else, so that a sale is a handover, not a migration project.
 
@@ -88,11 +88,11 @@ Tenants and subscriptions cost nothing. The ongoing overhead is one more sign-in
 | **Domains** | `rvintake.com` (product) and `rvserviceflow.com` (now the RVS umbrella, stays with ADS). DNS zones are in Azure (good). `rvintake.com` is in a GoDaddy account of its own, with login `godaddy@` (§4.4); its registrant contact still needs ADS's name and address (§4.8). | The API origin `api.rvserviceflow.com`, the Auth0 audience and the claim namespace all sit on a domain RV Intake won't own. Registrant and registrar login for `rvintake.com` must belong to ADS for RV Intake. | §4.4, §4.8, §4.9 |
 | **Auth0** | **Done (§4.7):** one tenant (#610), holding only RV Intake since October 15 2026. `auth0@` is Team Owner and tenant Admin. | None. A sale adds the buyer as Team Owner and tenant Admin. | §4.7 |
 | **Azure tenant** | **Confirmed:** one tenant, created with `markarnoldutah@gmail.com`, holding one subscription with only RV Intake resources. Renamed RV Intake; `admin@` and `breakglass@` accounts in the tenant are Global Admins and subscription Owners (§4.6 step 1). | No directory change needed. The personal account is still a Global Admin and holds direct data-plane roles, which are to be removed later. | §4.6 |
-| **Azure billing** | The only subscription in the tenant, so the bill carries nothing but RV Intake. Offer type and billing-account owner: to confirm (§5). Probably an individual account in your name, since the tenant was created with a personal Microsoft account. | A Visual Studio credit subscription can't go to a buyer at all. A pay-as-you-go account in your own name works at sale time, since billing transfers painlessly (§1), but it invoices you rather than ADS. | §4.6 |
+| **Azure billing** | The only subscription in the tenant, so the bill carries nothing but RV Intake. The billing account is an individual one named "Mark Arnold" (seen in Cost Management, October 17 2026). Offer type: to confirm (§5). | A Visual Studio credit subscription can't go to a buyer at all. A pay-as-you-go account in your own name works at sale time, since billing transfers painlessly (§1), but it invoices you rather than ADS. | §4.6 |
 | **GitHub** | **Done (§4.5):** `RVIntake-App/RVS`, in an organization owned by `rvintake-gh` (`github@`) and your personal account. OIDC subjects are `repo:RVIntake-App@341154614/RVS@1176179645:environment:*`. | None. A sale adds the buyer as an org owner; the IDs, and so the subjects, don't change. | §4.5 |
 | **Ops and DMARC email** | **Done (§4.4):** `ops@rvintake.com` and `dmarc@rvintake.com`, role aliases on the product's own domain. No DMARC records live outside Azure any more. | None. | §4.4 |
 | **Customer contact** | `support@arnolddigitalsolutions.com` in `SiteIdentity.cs`, the contact the Twilio toll-free verification (#659) will name. | Same, plus it's tied to the carrier filing. | §4.4 / §4.8 |
-| **SendGrid, Twilio** | One account each. Owner login and any sharing with other products: to confirm. | Login emails need to be product aliases, and the accounts must not be shared. | §4.8 |
+| **SendGrid, Twilio** | **Login done (§4.8):** one account each, linked, so one Twilio user signs in to both. Its email is `twilio@rvintake.com` since October 16 2026. | None for the login. A sale adds the buyer to both accounts. | §4.8 |
 | **Auth0 identity mail** | SendGrid, with its own restricted key, since October 15 2026 (Auth0 checklist §8.1). | Resolves itself if the SendGrid account is RV Intake's own. | §4.7, §4.8 |
 | **Money** | To confirm: which bank account and card pay RV Intake's bills. | Mixed books make the asset sale's purchase-price allocation and due diligence harder. | §4.1 |
 
@@ -209,8 +209,8 @@ For each account, the login email becomes the alias, the legal and billing name 
 | Account | Action |
 |---|---|
 | **Registrar** (`rvintake.com`) | **Done:** a GoDaddy account of its own, login `godaddy@`, holding `rvintake.com` and its Microsoft 365 mailbox (§4.4). Keep auto-renew on with a card that won't expire soon: if the domain lapsed, the mail that recovers every other account would stop with it. **Still to do:** set the domain's registrant contact to ADS's name, `godaddy@` and ADS's Florida address in one edit after domestication, since each registrant change can start a 60-day transfer lock. `rvserviceflow.com` stays in ADS's own registrar account (§4.9). |
-| **SendGrid** | Login `sendgrid@`. If any other product sends through it, give that product its own account. |
-| **Twilio** | Login `twilio@`. Toll-free verification is filed per number in a business's name. It is not filed yet (#659); file it under ADS. Keep the Trust Hub profile in step with `SiteIdentity.cs` (§4.1). Moving a number between Twilio accounts goes through Twilio support. |
+| **SendGrid** | **Login done October 16 2026.** SendGrid is linked to the Twilio account, so the login is the Twilio user (`twilio@`, next row) and is changed in the Twilio Console, not in SendGrid. The `sendgrid@` alias still delivers and can serve as SendGrid's contact address. Sender Authentication should list only `mail.rvintake.com` and `mail-staging.rvintake.com`; if any other product sends through it, give that product its own account. |
+| **Twilio** | **Login done October 16 2026:** `twilio@`, the one user for both Twilio and SendGrid, with an authenticator in 1Password. Before changing it, the Console's account switcher was checked to reach only RV Intake's two accounts; keep it that way. Toll-free verification is filed per number in a business's name. It is not filed yet (#659); file it under ADS. Keep the Trust Hub profile in step with `SiteIdentity.cs` (§4.1). Moving a number between Twilio accounts goes through Twilio support. |
 | **Stripe** (build item 7) | Open it for RV Intake alone from day one: legal name ADS, public business name and statement descriptor "RV Intake", payouts to the RV Intake bank account. Stripe accounts are hard to move between entities. |
 | **Bank** | The "ADS d/b/a RV Intake" account (§4.1). Bank accounts don't transfer in an asset sale; what matters is that the books separate cleanly. |
 | **USPTO** | Correspondence address `uspto@`. The registration is assigned to the buyer and recorded with the USPTO at sale. |
@@ -221,6 +221,20 @@ Two notes:
 
 - **Personal access:** you keep admin access to everything through your own user, invited as an admin or member. The alias is the account's identity, not your sign-in, so at sale time you remove yourself and nothing breaks.
 - **Paperwork:** keep a private inventory of every account, its login alias, its billing owner and its recovery method, in the private ADS repo (under `ADS/products/rv-intake/`), not in this public repo. That inventory is the handover document.
+
+
+**Notification addresses to revisit** (§6 rule 7). Logins are done or tracked above; these are the alert and billing settings each service keeps separately. Tick each off as it's confirmed.
+
+| Service | Set to `ops@` | Set to `billing@` |
+|---|---|---|
+| **Azure** | **Done October 17 2026, in Bicep** (Bicep README, "Monitoring & alerts"): Service Health alert, Defender for Cloud security contact (Owner-role emails off), Failure Anomalies smart detection, and a $250/month budget, all to the ops action group or `ops@`. The subscription-wide ones deploy from prod only. Deployed and checked in both environments; the Azure-created "Application Insights Smart Detection" action group was deleted in staging (prod never had one). Azure Monitor alerts were already `ops@` through `opsAlertEmailReceivers`. | Invoice email (after §4.6 step 3 moves billing to ADS). |
+| **Auth0** | Nothing to subscribe: `status.auth0.com` offers only an RSS feed, with no email option. Accepted, since an Auth0 outage stops only Manager sign-in; intake and the packet email don't depend on it. When sign-in fails, check the page's row for the tenant's region (dashboard → Settings). | The Team's billing contact, if the Free plan shows one. |
+| **GitHub** | Subscribe at `githubstatus.com`. Actions failure and Dependabot notices go to each user's own notification email; set `rvintake-gh`'s to `ops@`. | The `RVIntake-App` org's billing email (Settings → Billing). |
+| **Twilio** | Subscribe at `status.twilio.com`: Programmable Messaging, Messaging Services, US carriers / US Toll-Free, and Zipwhip Gateway if it covers toll-free. Usage triggers or balance alerts, if any. | Invoices and low-balance or auto-recharge notices (Admin Center → billing). |
+| **SendGrid** | Subscribe at `status.sendgrid.com`: Mail Sending and API v3. Usage and reputation alerts (Settings → Alert Settings). | Billing contact. |
+| **GoDaddy** | — | Renewal and payment notices go to the account email, `godaddy@`; GoDaddy doesn't split them. Leave as is, and keep auto-renew on a card that won't expire soon. |
+| **Microsoft 365 (GoDaddy-run)** | — | Billed through GoDaddy, as above. |
+| **Stripe** (when opened) | Disputes and failed payouts. | Stripe's own fee invoices. |
 
 ### 4.9 Decide what to do with `rvserviceflow.com` *(done October 15 2026: A, #900)*
 
@@ -283,6 +297,7 @@ How to read the results:
 4. **No personal identities as sole owners.** Every account has a role-alias login and ADS on the bill. Your personal user is a member you can remove.
 5. **ADS is the only party that signs.** Customers contract with "Arnold Digital Solutions LLC d/b/a RV Intake". RVS never appears as a party.
 6. **New accounts follow §4.8 the day they're created.** Adding a service is when a dependency on ADS's other products usually slips in.
+7. **Route each message by its kind, not by the service sending it.** Operational alerts (status pages, usage and threshold alerts, Azure Monitor, failed deploys) go to `ops@`. Invoices and payment notices go to `billing@`. Notices about the account itself (sign-in, password, MFA, API keys, terms) stay on the service's own login alias, where the service sends them by default. DMARC reports go to `dmarc@`. Every alias delivers to one mailbox today; the split is what lets a buyer re-route by changing a forwarding rule instead of every subscription.
 
 ---
 

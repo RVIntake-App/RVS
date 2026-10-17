@@ -276,6 +276,16 @@ param logAnalyticsDailyCapGb string = '-1'
 @description('Email receivers for the ops action group that packet-pipeline critical alerts route to (#494). Each item: { name: string, email: string }. Committed as a real default in both param files (#639) — the Action Groups resource provider does a full-replace PUT, so an empty array here deletes any receiver added by hand in the portal on the next deploy; leaving it empty is not a safe way to defer setting a receiver. Only used when deployObservability = true.')
 param opsAlertEmailReceivers array = []
 
+@description('When true (with deployObservability), this environment also owns the subscription-wide notifications: the Service Health alert, the Defender for Cloud security contact and the monthly budget, all routed to this environment\'s ops receivers. Staging and prod share one subscription, so set it in exactly one parameter file (prod); otherwise each Azure incident emails twice and the two deployments overwrite each other\'s security contact and budget.')
+param deploySubscriptionNotifications bool = false
+
+@description('Monthly budget in USD for the whole subscription (both environments). 0 = no budget. Only used when deploySubscriptionNotifications = true.')
+@minValue(0)
+param monthlyBudgetAmount int = 0
+
+@description('First day of the month the budget starts, yyyy-MM-01. Keep it fixed once deployed: Azure rejects a change to an existing budget\'s start date.')
+param budgetStartDate string = ''
+
 // ── Variables ─────────────────────────────────────────────────
 
 // Storage account names must be 3-24 lowercase alphanumeric characters with no hyphens.
@@ -410,10 +420,24 @@ module monitorAlerts 'modules/monitor-alerts.bicep' = if (deployObservability) {
     environmentName: environmentName
     tags: sharedTags
     opsEmailReceivers: opsAlertEmailReceivers
+    deployServiceHealthAlert: deploySubscriptionNotifications
     #disable-next-line BCP318
     availabilityTestId: deployObservability ? appInsights.outputs.availabilityTestId : ''
     availabilityTestLocationCount: length(availabilityTestLocations)
     availabilityTestFrequencySeconds: availabilityTestFrequencySeconds
+  }
+}
+
+// ── Subscription notifications (security contact, budget) ─────
+
+module subscriptionNotifications 'modules/subscription-notifications.bicep' = if (deployObservability && deploySubscriptionNotifications) {
+  name: 'deploy-sub-notifications-${environmentName}'
+  params: {
+    securityContactEmails: [for r in opsAlertEmailReceivers: r.email]
+    #disable-next-line BCP318
+    actionGroupId: (deployObservability && deploySubscriptionNotifications) ? monitorAlerts.outputs.actionGroupId : ''
+    monthlyBudgetAmount: monthlyBudgetAmount
+    budgetStartDate: budgetStartDate
   }
 }
 

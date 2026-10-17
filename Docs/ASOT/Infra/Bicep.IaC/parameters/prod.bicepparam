@@ -103,6 +103,16 @@ param opsAlertEmailReceivers = [
   }
 ]
 
+// Prod owns the subscription-wide notifications (staging shares the subscription
+// and leaves this false): Service Health alert, Defender for Cloud security
+// contact and the monthly budget, all to the receivers above. Without them,
+// Azure emails these to the subscription's role holders, i.e. personal accounts
+// (Ownership Boundaries §6 rule 7). The budget covers both environments; the
+// README estimates ~$110–190/month combined.
+param deploySubscriptionNotifications = true
+param monthlyBudgetAmount = 250
+param budgetStartDate = '2026-10-01'
+
 // Messaging: email through SendGrid, SMS through Twilio (Oct 2 2026 — ACS removed
 // before go-live; it retires Sep 30 2028). Neither is an Azure resource. Keys
 // live in Key Vault (SendGrid--ApiKey, Twilio--AccountSid / --ApiKeySid /

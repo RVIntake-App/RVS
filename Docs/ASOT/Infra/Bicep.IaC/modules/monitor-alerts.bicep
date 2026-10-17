@@ -24,6 +24,14 @@
 // queries `union traces, exceptions` and is robust to a LogCritical
 // gaining an exception argument later.
 //
+// Application Insights' Failure Anomalies smart detection is declared
+// here too, so it notifies the ops action group. Left to Azure, it is
+// created on first telemetry with an action group that emails the
+// subscription's role holders, i.e. personal accounts (Ownership
+// Boundaries §6 rule 7). The Service Health alert is subscription-wide,
+// so only the environment with deployServiceHealthAlert = true (prod)
+// creates it.
+//
 // Two further rules watch the monitoring itself rather than the app
 // (#602), and exist only while the /health availability test does:
 // one fires when the test stops passing, the other when the test
@@ -55,6 +63,9 @@ param tags object = {}
 
 @description('Email receivers for the ops action group. Each item: { name: string, email: string }. Empty = an action group with no receivers. Never rely on adding one via the portal instead: this property is a full-replace PUT, so the next deploy silently deletes any receiver not in this parameter (#639).')
 param opsEmailReceivers array = []
+
+@description('When true, creates the subscription-wide Service Health alert on this action group. The subscription holds both environments, so set it in one environment only (prod), or every Azure incident emails twice.')
+param deployServiceHealthAlert bool = false
 
 @description('Resource ID of the /health availability test (app-insights.bicep output). Empty = no test deployed, and neither availability-driven rule is created.')
 param availabilityTestId string = ''
@@ -120,6 +131,61 @@ resource opsActionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
         useCommonAlertSchema: true
       }
     ]
+  }
+}
+
+// Same name as the rule Azure creates on its own, so a deploy takes that rule
+// over (re-pointing it at ops) instead of adding a second one beside it.
+resource failureAnomalies 'Microsoft.AlertsManagement/smartDetectorAlertRules@2021-04-01' = {
+  name: 'Failure Anomalies - ${last(split(appInsightsResourceId, '/'))}'
+  location: 'global'
+  tags: tags
+  properties: {
+    description: 'Failure Anomalies notifies you of an unusual rise in the rate of failed HTTP requests or dependency calls.'
+    state: 'Enabled'
+    severity: 'Sev3'
+    frequency: 'PT1M'
+    detector: {
+      id: 'FailureAnomaliesDetector'
+    }
+    scope: [
+      appInsightsResourceId
+    ]
+    actionGroups: {
+      groupIds: [
+        opsActionGroup.id
+      ]
+    }
+  }
+}
+
+// Service Health is already filtered to the services and regions this
+// subscription uses, so no further condition is needed.
+resource serviceHealthAlert 'Microsoft.Insights/activityLogAlerts@2020-10-01' = if (deployServiceHealthAlert) {
+  name: 'alr-rvs-service-health'
+  location: 'global'
+  tags: tags
+  properties: {
+    description: 'Azure Service Health events (incidents, maintenance, advisories, security) affecting the RVS subscription.'
+    enabled: true
+    scopes: [
+      subscription().id
+    ]
+    condition: {
+      allOf: [
+        {
+          field: 'category'
+          equals: 'ServiceHealth'
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        {
+          actionGroupId: opsActionGroup.id
+        }
+      ]
+    }
   }
 }
 
