@@ -164,6 +164,11 @@ az deployment sub what-if \
   --parameters Docs/ASOT/Infra/Bicep.IaC/parameters/prod.bicepparam
 ```
 
+Or run `Tools/whatif.sh prod` (or `staging`). It runs the same command and
+also saves the output, with a commit/branch/time header, to
+`~/.rvs-whatif/<env>.txt`, outside the repo, so it can be reviewed without
+pasting.
+
 **Step 1 — deploy.** On the first deploy, pass the Auth0 values on the
 command line (they are deliberately not in the parameter file — see *Key
 Vault Configuration*), or omit them and write the secrets to the vault by
